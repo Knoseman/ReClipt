@@ -155,3 +155,6 @@ build-iPhoneSimulator/
 
 # Firebase
 GoogleService-Info.plist
+
+# Local repo notes
+MEMORY.md
