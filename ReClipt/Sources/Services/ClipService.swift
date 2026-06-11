@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/11/17.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
@@ -37,7 +37,7 @@ final class ClipService {
 
     func clearAll() {
         pasteboardHistoryRepository.deleteAll()
-        try? FileManager.default.removeItem(atPath: CPYUtilities.applicationSupportFolder())
+        try? FileManager.default.removeItem(atPath: ReCliptUtilities.applicationSupportFolder())
     }
 
     func delete(id: PasteboardHistory.ID) {

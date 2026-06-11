@@ -1,16 +1,16 @@
 //
-//  CPYExcludeAppPreferenceViewController.swift
+//  ExcludeAppPreferenceViewController.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/08/08.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-class CPYExcludeAppPreferenceViewController: NSViewController {
+class ExcludeAppPreferenceViewController: NSViewController {
     // MARK: - Properties
     private var tableView: NSTableView!
 
@@ -66,7 +66,7 @@ class CPYExcludeAppPreferenceViewController: NSViewController {
         let fileURLs = openPanel.urls
         fileURLs.forEach {
             guard let bundle = Bundle(url: $0), let info = bundle.infoDictionary else { return }
-            guard let appInfo = CPYAppInfo(info: info as [String: AnyObject]) else { return }
+            guard let appInfo = ReCliptAppInfo(info: info as [String: AnyObject]) else { return }
             AppEnvironment.current.excludeAppService.add(with: appInfo)
         }
         tableView.reloadData()
@@ -83,7 +83,7 @@ class CPYExcludeAppPreferenceViewController: NSViewController {
     }
 }
 
-extension CPYExcludeAppPreferenceViewController: NSTableViewDataSource {
+extension ExcludeAppPreferenceViewController: NSTableViewDataSource {
     func numberOfRows(in tableView: NSTableView) -> Int {
         return AppEnvironment.current.excludeAppService.applications.count
     }

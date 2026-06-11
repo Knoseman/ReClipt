@@ -3,7 +3,7 @@
 //
 //  ReClipt
 //
-//  Created by Shunsuke Furubayashi on 2026/06/03.
+//  Created by ReClipt on 2026/06/11.
 //
 //  Copyright © 2015-2026 ReClipt Project.
 //

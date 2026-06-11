@@ -1,16 +1,16 @@
 //
-//  CPYShortcutsPreferenceViewController.swift
+//  ShortcutsPreferenceViewController.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/02/26.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-class CPYShortcutsPreferenceViewController: NSViewController {
+class ShortcutsPreferenceViewController: NSViewController {
 
     // MARK: - Properties
     private enum ShortcutTarget {
@@ -94,7 +94,7 @@ class CPYShortcutsPreferenceViewController: NSViewController {
 }
 
 // MARK: - HotKeyRecorderView Delegate
-extension CPYShortcutsPreferenceViewController: HotKeyRecorderViewDelegate {
+extension ShortcutsPreferenceViewController: HotKeyRecorderViewDelegate {
     func hotKeyRecorderView(_ view: HotKeyRecorderView, didChangeKeyCombo keyCombo: KeyCombo?) {
         guard let target = shortcutTargets[ObjectIdentifier(view)] else { return }
         switch target {

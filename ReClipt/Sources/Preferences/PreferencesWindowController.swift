@@ -1,19 +1,19 @@
 //
-//  CPYPreferencesWindowController.swift
+//  PreferencesWindowController.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/02/25.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-final class CPYPreferencesWindowController: NSWindowController {
+final class PreferencesWindowController: NSWindowController {
 
     // MARK: - Properties
-    static let sharedController: CPYPreferencesWindowController = {
+    static let sharedController: PreferencesWindowController = {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
             styleMask: [.titled, .closable, .miniaturizable],
@@ -24,15 +24,15 @@ final class CPYPreferencesWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = NSColor(white: 0.99, alpha: 1)
-        return CPYPreferencesWindowController(window: window)
+        return PreferencesWindowController(window: window)
     }()
 
     private let viewControllers: [NSViewController] = [
-        CPYGeneralPreferenceViewController(),
-        CPYMenuPreferenceViewController(),
-        CPYTypePreferenceViewController(),
-        CPYExcludeAppPreferenceViewController(),
-        CPYShortcutsPreferenceViewController()
+        GeneralPreferenceViewController(),
+        MenuPreferenceViewController(),
+        TypePreferenceViewController(),
+        ExcludeAppPreferenceViewController(),
+        ShortcutsPreferenceViewController()
     ]
 
     private var toolbarButtons = [NSButton]()
@@ -115,7 +115,7 @@ final class CPYPreferencesWindowController: NSWindowController {
 }
 
 // MARK: - NSWindow Delegate
-extension CPYPreferencesWindowController: NSWindowDelegate {
+extension PreferencesWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if let window = window, !window.makeFirstResponder(window) {
             window.endEditing(for: nil)
@@ -126,7 +126,7 @@ extension CPYPreferencesWindowController: NSWindowDelegate {
 
 // MARK: - Preference View Controllers (Programmatic)
 
-final class CPYGeneralPreferenceViewController: NSViewController {
+final class GeneralPreferenceViewController: NSViewController {
     override func loadView() {
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
         self.view = view
@@ -140,7 +140,7 @@ final class CPYGeneralPreferenceViewController: NSViewController {
     }
 }
 
-final class CPYMenuPreferenceViewController: NSViewController {
+final class MenuPreferenceViewController: NSViewController {
     override func loadView() {
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
         self.view = view

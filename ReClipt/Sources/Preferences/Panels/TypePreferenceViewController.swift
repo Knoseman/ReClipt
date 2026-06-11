@@ -1,16 +1,16 @@
 //
-//  CPYTypePreferenceViewController.swift
+//  TypePreferenceViewController.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/03/17.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-final class CPYTypePreferenceViewController: NSViewController {
+final class TypePreferenceViewController: NSViewController {
     // MARK: - Properties
     @objc var storeTypes: NSMutableDictionary!
 

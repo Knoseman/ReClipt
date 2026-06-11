@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/04/17.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Foundation
@@ -36,19 +36,19 @@ struct Constants {
     }
 
     struct UserDefaults {
-        static let hotKeys = "kCPYPrefHotKeysKey"
-        static let menuIconSize = "kCPYPrefMenuIconSizeKey"
-        static let maxHistorySize = "kCPYPrefMaxHistorySizeKey"
-        static let storeTypes = "kCPYPrefStoreTypesKey"
-        static let inputPasteCommand = "kCPYPrefInputPasteCommandKey"
-        static let showIconInTheMenu = "kCPYPrefShowIconInTheMenuKey"
-        static let numberOfItemsPlaceInline = "kCPYPrefNumberOfItemsPlaceInlineKey"
-        static let numberOfItemsPlaceInsideFolder  = "kCPYPrefNumberOfItemsPlaceInsideFolderKey"
-        static let maxMenuItemTitleLength = "kCPYPrefMaxMenuItemTitleLengthKey"
-        static let menuItemsTitleStartWithZero = "kCPYPrefMenuItemsTitleStartWithZeroKey"
-        static let reorderClipsAfterPasting = "kCPYPrefReorderClipsAfterPasting"
-        static let addClearHistoryMenuItem = "kCPYPrefAddClearHistoryMenuItemKey"
-        static let showAlertBeforeClearHistory = "kCPYPrefShowAlertBeforeClearHistoryKey"
+        static let hotKeys = "kReCliptPrefHotKeysKey"
+        static let menuIconSize = "kReCliptPrefMenuIconSizeKey"
+        static let maxHistorySize = "kReCliptPrefMaxHistorySizeKey"
+        static let storeTypes = "kReCliptPrefStoreTypesKey"
+        static let inputPasteCommand = "kReCliptPrefInputPasteCommandKey"
+        static let showIconInTheMenu = "kReCliptPrefShowIconInTheMenuKey"
+        static let numberOfItemsPlaceInline = "kReCliptPrefNumberOfItemsPlaceInlineKey"
+        static let numberOfItemsPlaceInsideFolder  = "kReCliptPrefNumberOfItemsPlaceInsideFolderKey"
+        static let maxMenuItemTitleLength = "kReCliptPrefMaxMenuItemTitleLengthKey"
+        static let menuItemsTitleStartWithZero = "kReCliptPrefMenuItemsTitleStartWithZeroKey"
+        static let reorderClipsAfterPasting = "kReCliptPrefReorderClipsAfterPasting"
+        static let addClearHistoryMenuItem = "kReCliptPrefAddClearHistoryMenuItemKey"
+        static let showAlertBeforeClearHistory = "kReCliptPrefShowAlertBeforeClearHistoryKey"
         static let menuItemsAreMarkedWithNumbers = "menuItemsAreMarkedWithNumbers"
         static let showToolTipOnMenuItem = "showToolTipOnMenuItem"
         static let showImageInTheMenu = "showImageInTheMenu"
@@ -56,34 +56,34 @@ struct Constants {
         static let maxLengthOfToolTip = "maxLengthOfToolTipKey"
         static let loginItem = "loginItem"
         static let suppressAlertForLoginItem = "suppressAlertForLoginItem"
-        static let showStatusItem = "kCPYPrefShowStatusItemKey"
+        static let showStatusItem = "kReCliptPrefShowStatusItemKey"
         static let thumbnailWidth = "thumbnailWidth"
         static let thumbnailHeight = "thumbnailHeight"
-        static let overwriteSameHistory = "kCPYPrefOverwriteSameHistroy"
-        static let copySameHistory = "kCPYPrefCopySameHistroy"
-        static let suppressAlertForDeleteSnippet = "kCPYSuppressAlertForDeleteSnippet"
-        static let excludeApplications = "kCPYExcludeApplications"
-        static let collectCrashReport = "kCPYCollectCrashReport"
-        static let showColorPreviewInTheMenu = "kCPYPrefShowColorPreviewInTheMenu"
+        static let overwriteSameHistory = "kReCliptPrefOverwriteSameHistroy"
+        static let copySameHistory = "kReCliptPrefCopySameHistroy"
+        static let suppressAlertForDeleteSnippet = "kReCliptSuppressAlertForDeleteSnippet"
+        static let excludeApplications = "kReCliptExcludeApplications"
+        static let collectCrashReport = "kReCliptCollectCrashReport"
+        static let showColorPreviewInTheMenu = "kReCliptPrefShowColorPreviewInTheMenu"
     }
 
     struct Beta {
-        static let pastePlainText = "kCPYBetaPastePlainText"
-        static let pastePlainTextModifier = "kCPYBetaPastePlainTextModifier"
-        static let deleteHistory = "kCPYBetaDeleteHistory"
-        static let deleteHistoryModifier = "kCPYBetaDeleteHistoryModifier"
-        static let pasteAndDeleteHistory = "kCPYBetaPasteAndDeleteHistory"
-        static let pasteAndDeleteHistoryModifier = "kCPYBetapasteAndDeleteHistoryModifier"
-        static let observerScreenshot = "kCPYBetaObserveScreenshot"
+        static let pastePlainText = "kReCliptBetaPastePlainText"
+        static let pastePlainTextModifier = "kReCliptBetaPastePlainTextModifier"
+        static let deleteHistory = "kReCliptBetaDeleteHistory"
+        static let deleteHistoryModifier = "kReCliptBetaDeleteHistoryModifier"
+        static let pasteAndDeleteHistory = "kReCliptBetaPasteAndDeleteHistory"
+        static let pasteAndDeleteHistoryModifier = "kReCliptBetapasteAndDeleteHistoryModifier"
+        static let observerScreenshot = "kReCliptBetaObserveScreenshot"
     }
 
     struct Update {
-        static let enableAutomaticCheck = "kCPYEnableAutomaticCheckKey"
-        static let checkInterval = "kCPYUpdateCheckIntervalKey"
+        static let enableAutomaticCheck = "kReCliptEnableAutomaticCheckKey"
+        static let checkInterval = "kReCliptUpdateCheckIntervalKey"
     }
 
     struct Notification {
-        static let closeSnippetEditor = "kCPYSnippetEditorWillCloseNotification"
+        static let closeSnippetEditor = "kReCliptSnippetEditorWillCloseNotification"
     }
 
     struct Xml {
@@ -98,12 +98,12 @@ struct Constants {
     }
 
     struct HotKey {
-        static let mainKeyCombo = "kCPYHotKeyMainKeyCombo"
-        static let historyKeyCombo = "kCPYHotKeyHistoryKeyCombo"
-        static let snippetKeyCombo = "kCPYHotKeySnippetKeyCombo"
-        static let migrateNewKeyCombo = "kCPYMigrateNewKeyCombo"
-        static let folderKeyCombos = "kCPYFolderKeyCombos"
-        static let clearHistoryKeyCombo = "kCPYClearHistoryKeyCombo"
+        static let mainKeyCombo = "kReCliptHotKeyMainKeyCombo"
+        static let historyKeyCombo = "kReCliptHotKeyHistoryKeyCombo"
+        static let snippetKeyCombo = "kReCliptHotKeySnippetKeyCombo"
+        static let migrateNewKeyCombo = "kReCliptMigrateNewKeyCombo"
+        static let folderKeyCombos = "kReCliptFolderKeyCombos"
+        static let clearHistoryKeyCombo = "kReCliptClearHistoryKeyCombo"
     }
 
 }

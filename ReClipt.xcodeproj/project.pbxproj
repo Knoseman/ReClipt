@@ -38,18 +38,18 @@
 		FA1DB4BA1DDCB452007F95C8 /* NSUserDefaults+ArchiveData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4AF1DDCB452007F95C8 /* NSUserDefaults+ArchiveData.swift */; };
 		FA1DB4BD1DDCB452007F95C8 /* String+Substring.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4B21DDCB452007F95C8 /* String+Substring.swift */; };
 		FA1DB4C91DDCB460007F95C8 /* MenuManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4C31DDCB460007F95C8 /* MenuManager.swift */; };
-		FA1DB4D21DDCB479007F95C8 /* CPYAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4CC1DDCB479007F95C8 /* CPYAppInfo.swift */; };
-		FA1DB4E51DDCB49C007F95C8 /* CPYUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4D91DDCB49C007F95C8 /* CPYUtilities.swift */; };
-		FA1DB4E71DDCB49C007F95C8 /* CPYDesignableButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4DD1DDCB49C007F95C8 /* CPYDesignableButton.swift */; };
-		FA1DB4E81DDCB49C007F95C8 /* CPYDesignableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4DE1DDCB49C007F95C8 /* CPYDesignableView.swift */; };
-		FA1DB4E91DDCB49C007F95C8 /* CPYSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E01DDCB49C007F95C8 /* CPYSplitView.swift */; };
-		FA1DB4EA1DDCB49C007F95C8 /* CPYSnippetsEditorCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E21DDCB49C007F95C8 /* CPYSnippetsEditorCell.swift */; };
-		FA1DB4EB1DDCB49C007F95C8 /* CPYPlaceHolderTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E41DDCB49C007F95C8 /* CPYPlaceHolderTextView.swift */; };
-		FA1DB5121DDCB4C0007F95C8 /* CPYPreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4ED1DDCB4C0007F95C8 /* CPYPreferencesWindowController.swift */; };
-		FA1DB5151DDCB4C0007F95C8 /* CPYExcludeAppPreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F31DDCB4C0007F95C8 /* CPYExcludeAppPreferenceViewController.swift */; };
-		FA1DB5161DDCB4C0007F95C8 /* CPYShortcutsPreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F41DDCB4C0007F95C8 /* CPYShortcutsPreferenceViewController.swift */; };
-		FA1DB5171DDCB4C0007F95C8 /* CPYTypePreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F51DDCB4C0007F95C8 /* CPYTypePreferenceViewController.swift */; };
-		FA1DB5201DDCB4C0007F95C8 /* CPYSnippetsEditorWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB50D1DDCB4C0007F95C8 /* CPYSnippetsEditorWindowController.swift */; };
+		FA1DB4D21DDCB479007F95C8 /* ReCliptAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4CC1DDCB479007F95C8 /* ReCliptAppInfo.swift */; };
+		FA1DB4E51DDCB49C007F95C8 /* ReCliptUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4D91DDCB49C007F95C8 /* ReCliptUtilities.swift */; };
+		FA1DB4E71DDCB49C007F95C8 /* DesignableButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4DD1DDCB49C007F95C8 /* DesignableButton.swift */; };
+		FA1DB4E81DDCB49C007F95C8 /* DesignableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4DE1DDCB49C007F95C8 /* DesignableView.swift */; };
+		FA1DB4E91DDCB49C007F95C8 /* ReCliptSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E01DDCB49C007F95C8 /* ReCliptSplitView.swift */; };
+		FA1DB4EA1DDCB49C007F95C8 /* SnippetsEditorCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E21DDCB49C007F95C8 /* SnippetsEditorCell.swift */; };
+		FA1DB4EB1DDCB49C007F95C8 /* PlaceholderTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4E41DDCB49C007F95C8 /* PlaceholderTextView.swift */; };
+		FA1DB5121DDCB4C0007F95C8 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4ED1DDCB4C0007F95C8 /* PreferencesWindowController.swift */; };
+		FA1DB5151DDCB4C0007F95C8 /* ExcludeAppPreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F31DDCB4C0007F95C8 /* ExcludeAppPreferenceViewController.swift */; };
+		FA1DB5161DDCB4C0007F95C8 /* ShortcutsPreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F41DDCB4C0007F95C8 /* ShortcutsPreferenceViewController.swift */; };
+		FA1DB5171DDCB4C0007F95C8 /* TypePreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB4F51DDCB4C0007F95C8 /* TypePreferenceViewController.swift */; };
+		FA1DB5201DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1DB50D1DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift */; };
 		FA3778931F3B691A003B5BAB /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3778921F3B691A003B5BAB /* AppEnvironment.swift */; };
 		FA3778951F3B6920003B5BAB /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3778941F3B6920003B5BAB /* Environment.swift */; };
 		FA431F021E6718CE00ACFF56 /* Collection+Safe.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA431F011E6718CE00ACFF56 /* Collection+Safe.swift */; };
@@ -112,18 +112,18 @@
 		FA1DB4AF1DDCB452007F95C8 /* NSUserDefaults+ArchiveData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSUserDefaults+ArchiveData.swift"; sourceTree = "<group>"; };
 		FA1DB4B21DDCB452007F95C8 /* String+Substring.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "String+Substring.swift"; sourceTree = "<group>"; };
 		FA1DB4C31DDCB460007F95C8 /* MenuManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MenuManager.swift; sourceTree = "<group>"; };
-		FA1DB4CC1DDCB479007F95C8 /* CPYAppInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYAppInfo.swift; sourceTree = "<group>"; };
-		FA1DB4D91DDCB49C007F95C8 /* CPYUtilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYUtilities.swift; sourceTree = "<group>"; };
-		FA1DB4DD1DDCB49C007F95C8 /* CPYDesignableButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYDesignableButton.swift; sourceTree = "<group>"; };
-		FA1DB4DE1DDCB49C007F95C8 /* CPYDesignableView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYDesignableView.swift; sourceTree = "<group>"; };
-		FA1DB4E01DDCB49C007F95C8 /* CPYSplitView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYSplitView.swift; sourceTree = "<group>"; };
-		FA1DB4E21DDCB49C007F95C8 /* CPYSnippetsEditorCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYSnippetsEditorCell.swift; sourceTree = "<group>"; };
-		FA1DB4E41DDCB49C007F95C8 /* CPYPlaceHolderTextView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYPlaceHolderTextView.swift; sourceTree = "<group>"; };
-		FA1DB4ED1DDCB4C0007F95C8 /* CPYPreferencesWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYPreferencesWindowController.swift; sourceTree = "<group>"; };
-		FA1DB4F31DDCB4C0007F95C8 /* CPYExcludeAppPreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYExcludeAppPreferenceViewController.swift; sourceTree = "<group>"; };
-		FA1DB4F41DDCB4C0007F95C8 /* CPYShortcutsPreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYShortcutsPreferenceViewController.swift; sourceTree = "<group>"; };
-		FA1DB4F51DDCB4C0007F95C8 /* CPYTypePreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYTypePreferenceViewController.swift; sourceTree = "<group>"; };
-		FA1DB50D1DDCB4C0007F95C8 /* CPYSnippetsEditorWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CPYSnippetsEditorWindowController.swift; sourceTree = "<group>"; };
+		FA1DB4CC1DDCB479007F95C8 /* ReCliptAppInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReCliptAppInfo.swift; sourceTree = "<group>"; };
+		FA1DB4D91DDCB49C007F95C8 /* ReCliptUtilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReCliptUtilities.swift; sourceTree = "<group>"; };
+		FA1DB4DD1DDCB49C007F95C8 /* DesignableButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DesignableButton.swift; sourceTree = "<group>"; };
+		FA1DB4DE1DDCB49C007F95C8 /* DesignableView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DesignableView.swift; sourceTree = "<group>"; };
+		FA1DB4E01DDCB49C007F95C8 /* ReCliptSplitView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReCliptSplitView.swift; sourceTree = "<group>"; };
+		FA1DB4E21DDCB49C007F95C8 /* SnippetsEditorCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SnippetsEditorCell.swift; sourceTree = "<group>"; };
+		FA1DB4E41DDCB49C007F95C8 /* PlaceholderTextView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaceholderTextView.swift; sourceTree = "<group>"; };
+		FA1DB4ED1DDCB4C0007F95C8 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PreferencesWindowController.swift; sourceTree = "<group>"; };
+		FA1DB4F31DDCB4C0007F95C8 /* ExcludeAppPreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExcludeAppPreferenceViewController.swift; sourceTree = "<group>"; };
+		FA1DB4F41DDCB4C0007F95C8 /* ShortcutsPreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShortcutsPreferenceViewController.swift; sourceTree = "<group>"; };
+		FA1DB4F51DDCB4C0007F95C8 /* TypePreferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TypePreferenceViewController.swift; sourceTree = "<group>"; };
+		FA1DB50D1DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SnippetsEditorWindowController.swift; sourceTree = "<group>"; };
 		FA3778921F3B691A003B5BAB /* AppEnvironment.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		FA3778941F3B6920003B5BAB /* Environment.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
 		FA431F011E6718CE00ACFF56 /* Collection+Safe.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Collection+Safe.swift"; sourceTree = "<group>"; };
@@ -190,14 +190,13 @@
 			path = Configurations;
 			sourceTree = "<group>";
 		};
-		C54C29D32FC3E1F500EF30FB /* Database */ = {
-			isa = PBXGroup;
-			children = (
-				C574471F2FD09FC6000D64D3 /* Realm */,
-											);
-			path = Database;
-			sourceTree = "<group>";
-		};
+			C54C29D32FC3E1F500EF30FB /* Database */ = {
+				isa = PBXGroup;
+				children = (
+												);
+				path = Database;
+				sourceTree = "<group>";
+			};
 		C5700B452FC40BBF00C8F965 /* Repositories */ = {
 			isa = PBXGroup;
 			children = (
@@ -240,16 +239,9 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
-		C574471F2FD09FC6000D64D3 /* Realm */ = {
-			isa = PBXGroup;
-			children = (
-											);
-			path = Realm;
-			sourceTree = "<group>";
-		};
-		C57447262FD09FD9000D64D3 /* Dependencies */ = {
-			isa = PBXGroup;
-			children = (
+			C57447262FD09FD9000D64D3 /* Dependencies */ = {
+				isa = PBXGroup;
+				children = (
 					);
 			path = Dependencies;
 			sourceTree = "<group>";
@@ -347,7 +339,7 @@
 		FA1DB4CB1DDCB479007F95C8 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4CC1DDCB479007F95C8 /* CPYAppInfo.swift */,
+				FA1DB4CC1DDCB479007F95C8 /* ReCliptAppInfo.swift */,
 				C57100062FCEB02000C8F965 /* PasteboardContent.swift */,
 				C522FB942FCBD69A00E61800 /* PasteboardAvailableType.swift */,
 				C5700B3E2FC40ABF00C8F965 /* DraggedData.swift */,
@@ -359,7 +351,7 @@
 		FA1DB4D81DDCB49C007F95C8 /* Utility */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4D91DDCB49C007F95C8 /* CPYUtilities.swift */,
+				FA1DB4D91DDCB49C007F95C8 /* ReCliptUtilities.swift */,
 			);
 			path = Utility;
 			sourceTree = "<group>";
@@ -379,8 +371,8 @@
 		FA1DB4DC1DDCB49C007F95C8 /* DesignableView */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4DD1DDCB49C007F95C8 /* CPYDesignableButton.swift */,
-				FA1DB4DE1DDCB49C007F95C8 /* CPYDesignableView.swift */,
+				FA1DB4DD1DDCB49C007F95C8 /* DesignableButton.swift */,
+				FA1DB4DE1DDCB49C007F95C8 /* DesignableView.swift */,
 			);
 			path = DesignableView;
 			sourceTree = "<group>";
@@ -388,7 +380,7 @@
 		FA1DB4DF1DDCB49C007F95C8 /* SplitViews */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4E01DDCB49C007F95C8 /* CPYSplitView.swift */,
+				FA1DB4E01DDCB49C007F95C8 /* ReCliptSplitView.swift */,
 			);
 			path = SplitViews;
 			sourceTree = "<group>";
@@ -396,7 +388,7 @@
 		FA1DB4E11DDCB49C007F95C8 /* TableViewCell */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4E21DDCB49C007F95C8 /* CPYSnippetsEditorCell.swift */,
+				FA1DB4E21DDCB49C007F95C8 /* SnippetsEditorCell.swift */,
 			);
 			path = TableViewCell;
 			sourceTree = "<group>";
@@ -404,7 +396,7 @@
 		FA1DB4E31DDCB49C007F95C8 /* TextViews */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4E41DDCB49C007F95C8 /* CPYPlaceHolderTextView.swift */,
+				FA1DB4E41DDCB49C007F95C8 /* PlaceholderTextView.swift */,
 			);
 			path = TextViews;
 			sourceTree = "<group>";
@@ -412,7 +404,7 @@
 		FA1DB4EC1DDCB4C0007F95C8 /* Preferences */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB4ED1DDCB4C0007F95C8 /* CPYPreferencesWindowController.swift */,
+				FA1DB4ED1DDCB4C0007F95C8 /* PreferencesWindowController.swift */,
 						FA1DB4F11DDCB4C0007F95C8 /* Panels */,
 			);
 			path = Preferences;
@@ -421,9 +413,9 @@
 		FA1DB4F11DDCB4C0007F95C8 /* Panels */ = {
 			isa = PBXGroup;
 			children = (
-						FA1DB4F31DDCB4C0007F95C8 /* CPYExcludeAppPreferenceViewController.swift */,
-				FA1DB4F41DDCB4C0007F95C8 /* CPYShortcutsPreferenceViewController.swift */,
-				FA1DB4F51DDCB4C0007F95C8 /* CPYTypePreferenceViewController.swift */,
+						FA1DB4F31DDCB4C0007F95C8 /* ExcludeAppPreferenceViewController.swift */,
+				FA1DB4F41DDCB4C0007F95C8 /* ShortcutsPreferenceViewController.swift */,
+				FA1DB4F51DDCB4C0007F95C8 /* TypePreferenceViewController.swift */,
 																			);
 			path = Panels;
 			sourceTree = "<group>";
@@ -431,7 +423,7 @@
 		FA1DB50C1DDCB4C0007F95C8 /* Snippets */ = {
 			isa = PBXGroup;
 			children = (
-				FA1DB50D1DDCB4C0007F95C8 /* CPYSnippetsEditorWindowController.swift */,
+				FA1DB50D1DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift */,
 					);
 			path = Snippets;
 			sourceTree = "<group>";
@@ -543,7 +535,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				CLASSPREFIX = CPY;
+				CLASSPREFIX = RC;
 				LastSwiftUpdateCheck = 0700;
 				LastUpgradeCheck = 2650;
 				ORGANIZATIONNAME = "ReClipt Project";
@@ -611,7 +603,7 @@
 				FA1DB4A61DDCB443007F95C8 /* MenuType.swift in Sources */,
 								FA3778931F3B691A003B5BAB /* AppEnvironment.swift in Sources */,
 				FAC0DCF11DE576F300309C49 /* PasteService.swift in Sources */,
-				FA1DB4E51DDCB49C007F95C8 /* CPYUtilities.swift in Sources */,
+				FA1DB4E51DDCB49C007F95C8 /* ReCliptUtilities.swift in Sources */,
 				FA1DB4B81DDCB452007F95C8 /* NSLock+ReClipt.swift in Sources */,
 				FA1DB4BA1DDCB452007F95C8 /* NSUserDefaults+ArchiveData.swift in Sources */,
 				FAA4BCCC2163DC9100FF5D18 /* AccessibilityService.swift in Sources */,
@@ -620,7 +612,7 @@
 				C5F1B7331FF74A2D00D2DA83 /* NSPasteboard+Deprecated.swift in Sources */,
 				FA1DB4A31DDCB433007F95C8 /* Constants.swift in Sources */,
 				FA1DB4B41DDCB452007F95C8 /* NSBundle+Version.swift in Sources */,
-				FA1DB5171DDCB4C0007F95C8 /* CPYTypePreferenceViewController.swift in Sources */,
+				FA1DB5171DDCB4C0007F95C8 /* TypePreferenceViewController.swift in Sources */,
 				FA1DB4A21DDCB433007F95C8 /* AppDelegate.swift in Sources */,
 						C522FB952FCBD6AA00E61800 /* PasteboardAvailableType.swift in Sources */,
 				C5700B462FC40BBF00C8F965 /* SnippetRepository.swift in Sources */,
@@ -630,20 +622,20 @@
 				FA1DB4C91DDCB460007F95C8 /* MenuManager.swift in Sources */,
 				FA1DB4BD1DDCB452007F95C8 /* String+Substring.swift in Sources */,
 				FA1189331E4CD58C00244F12 /* ExcludeAppService.swift in Sources */,
-				FA1DB4E91DDCB49C007F95C8 /* CPYSplitView.swift in Sources */,
-				FA1DB4E81DDCB49C007F95C8 /* CPYDesignableView.swift in Sources */,
+				FA1DB4E91DDCB49C007F95C8 /* ReCliptSplitView.swift in Sources */,
+				FA1DB4E81DDCB49C007F95C8 /* DesignableView.swift in Sources */,
 						C57100072FCEB02000C8F965 /* PasteboardContent.swift in Sources */,
 														FA1DB4B71DDCB452007F95C8 /* NSImage+Resize.swift in Sources */,
-						FA1DB5151DDCB4C0007F95C8 /* CPYExcludeAppPreferenceViewController.swift in Sources */,
-				FA1DB4EA1DDCB49C007F95C8 /* CPYSnippetsEditorCell.swift in Sources */,
-				FA1DB5161DDCB4C0007F95C8 /* CPYShortcutsPreferenceViewController.swift in Sources */,
+						FA1DB5151DDCB4C0007F95C8 /* ExcludeAppPreferenceViewController.swift in Sources */,
+				FA1DB4EA1DDCB49C007F95C8 /* SnippetsEditorCell.swift in Sources */,
+				FA1DB5161DDCB4C0007F95C8 /* ShortcutsPreferenceViewController.swift in Sources */,
 				FA431F021E6718CE00ACFF56 /* Collection+Safe.swift in Sources */,
-				FA1DB4E71DDCB49C007F95C8 /* CPYDesignableButton.swift in Sources */,
-				FA1DB4D21DDCB479007F95C8 /* CPYAppInfo.swift in Sources */,
+				FA1DB4E71DDCB49C007F95C8 /* DesignableButton.swift in Sources */,
+				FA1DB4D21DDCB479007F95C8 /* ReCliptAppInfo.swift in Sources */,
 				FAE911B91DE045E2008A4BEC /* HotKeyService.swift in Sources */,
-				FA1DB5201DDCB4C0007F95C8 /* CPYSnippetsEditorWindowController.swift in Sources */,
-				FA1DB4EB1DDCB49C007F95C8 /* CPYPlaceHolderTextView.swift in Sources */,
-				FA1DB5121DDCB4C0007F95C8 /* CPYPreferencesWindowController.swift in Sources */,
+				FA1DB5201DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift in Sources */,
+				FA1DB4EB1DDCB49C007F95C8 /* PlaceholderTextView.swift in Sources */,
+				FA1DB5121DDCB4C0007F95C8 /* PreferencesWindowController.swift in Sources */,
 				FAE911BB1DE054F1008A4BEC /* NSCoding+Archive.swift in Sources */,
 						FA3778951F3B6920003B5BAB /* Environment.swift in Sources */,
 				62651FF8A56464869CAA6BCC /* SQLiteStore.swift in Sources */,

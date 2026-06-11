@@ -1,17 +1,17 @@
 //
-//  CPYSnippetsEditorCell.swift
+//  SnippetsEditorCell.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/07/02.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Foundation
 import Cocoa
 
-final class CPYSnippetsEditorCell: NSTextFieldCell {
+final class SnippetsEditorCell: NSTextFieldCell {
 
     // MARK: - Properties
     var iconType = IconType.folder
@@ -34,7 +34,7 @@ final class CPYSnippetsEditorCell: NSTextFieldCell {
     }
 
     override func copy(with zone: NSZone?) -> Any {
-        guard let cell = super.copy(with: zone) as? CPYSnippetsEditorCell else { return super.copy(with: zone) }
+        guard let cell = super.copy(with: zone) as? SnippetsEditorCell else { return super.copy(with: zone) }
         cell.iconType = iconType
         return cell
     }

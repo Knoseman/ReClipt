@@ -1,16 +1,16 @@
 //
-//  CPYDesignableButton.swift
+//  DesignableButton.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/02/26.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-class CPYDesignableButton: NSButton {
+class DesignableButton: NSButton {
 
     @IBInspectable var textColor: NSColor = NSColor(named: "title") ?? .labelColor
 

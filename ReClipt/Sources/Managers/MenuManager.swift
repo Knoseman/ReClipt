@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/03/08.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
@@ -15,7 +15,7 @@ final class MenuManager: NSObject {
 
     // MARK: - Properties
     // Menus
-    fileprivate var clipMenu: NSMenu?
+    fileprivate var mainMenu: NSMenu?
     fileprivate var historyMenu: NSMenu?
     fileprivate var snippetMenu: NSMenu?
     // StatusMenu
@@ -73,7 +73,7 @@ extension MenuManager {
         let menu: NSMenu?
         switch type {
         case .main:
-            menu = clipMenu
+            menu = mainMenu
         case .history:
             menu = historyMenu
         case .snippet:
@@ -150,28 +150,28 @@ private extension MenuManager {
 // MARK: - Menus
 private extension MenuManager {
      func createMainMenu() {
-        clipMenu = NSMenu(title: Constants.Application.name)
+        mainMenu = NSMenu(title: Constants.Application.name)
         historyMenu = NSMenu(title: Constants.Menu.history)
         snippetMenu = NSMenu(title: Constants.Menu.snippet)
 
-        addHistoryItems(clipMenu!)
+        addHistoryItems(mainMenu!)
         addHistoryItems(historyMenu!)
 
-        addSnippetItems(clipMenu!, separateMenu: true, details: snippetFolderDetails)
+        addSnippetItems(mainMenu!, separateMenu: true, details: snippetFolderDetails)
         addSnippetItems(snippetMenu!, separateMenu: false, details: snippetFolderDetails)
 
-        clipMenu?.addItem(NSMenuItem.separator())
+        mainMenu?.addItem(NSMenuItem.separator())
 
         if AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.addClearHistoryMenuItem) {
-            clipMenu?.addItem(NSMenuItem(title: String(localized: "Clear History"), action: #selector(AppDelegate.clearAllHistory)))
+            mainMenu?.addItem(NSMenuItem(title: String(localized: "Clear History"), action: #selector(AppDelegate.clearAllHistory)))
         }
 
-        clipMenu?.addItem(NSMenuItem(title: String(localized: "Edit Snippets"), action: #selector(AppDelegate.showSnippetEditorWindow)))
-        clipMenu?.addItem(NSMenuItem(title: String(localized: "Preferences"), action: #selector(AppDelegate.showPreferenceWindow)))
-        clipMenu?.addItem(NSMenuItem.separator())
-        clipMenu?.addItem(NSMenuItem(title: String(localized: "Quit ReClipt"), action: #selector(AppDelegate.terminate)))
+        mainMenu?.addItem(NSMenuItem(title: String(localized: "Edit Snippets"), action: #selector(AppDelegate.showSnippetEditorWindow)))
+        mainMenu?.addItem(NSMenuItem(title: String(localized: "Preferences"), action: #selector(AppDelegate.showPreferenceWindow)))
+        mainMenu?.addItem(NSMenuItem.separator())
+        mainMenu?.addItem(NSMenuItem(title: String(localized: "Quit ReClipt"), action: #selector(AppDelegate.terminate)))
 
-        statusItem?.menu = clipMenu
+        statusItem?.menu = mainMenu
     }
 
     func menuItemTitle(_ title: String, listNumber: NSInteger, isMarkWithNumber: Bool) -> String {
@@ -416,7 +416,7 @@ private extension MenuManager {
         statusItem?.image = image
         statusItem?.highlightMode = true
         statusItem?.toolTip = "\(Constants.Application.name)\(Bundle.main.appVersion ?? "")"
-        statusItem?.menu = clipMenu
+        statusItem?.menu = mainMenu
     }
 
     func removeStatusItem() {

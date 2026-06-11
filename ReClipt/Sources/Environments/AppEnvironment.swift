@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2017/08/10.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Foundation
@@ -67,8 +67,8 @@ struct AppEnvironment {
     }
 
     static func fromStorage(defaults: UserDefaults = .standard) -> Environment {
-        var excludeApplications = [CPYAppInfo]()
-        if let data = defaults.object(forKey: Constants.UserDefaults.excludeApplications) as? Data, let applications = NSKeyedUnarchiver.unarchiveObject(with: data) as? [CPYAppInfo] {
+        var excludeApplications = [ReCliptAppInfo]()
+        if let data = defaults.object(forKey: Constants.UserDefaults.excludeApplications) as? Data, let applications = NSKeyedUnarchiver.unarchiveObject(with: data) as? [ReCliptAppInfo] {
             excludeApplications = applications
         }
         let excludeAppService = ExcludeAppService(applications: excludeApplications)

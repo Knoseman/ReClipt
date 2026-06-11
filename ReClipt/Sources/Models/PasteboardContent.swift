@@ -3,7 +3,7 @@
 //
 //  ReClipt
 //
-//  Created by Shunsuke Furubayashi on 2026/05/28.
+//  Created by ReClipt on 2026/06/11.
 //
 //  Copyright © 2015-2026 ReClipt Project.
 //
@@ -114,7 +114,7 @@ extension PasteboardContent {
 
         pasteboard.clearContents()
         // File URLs are normally written as per-item fileURL data.
-        // Keep NSFilenamesPboardType on the pasteboard root for legacy history entries
+        // Keep NSFilenamesPboardType on the pasteboard root for stored filename entries
         // and apps that only understand the deprecated filenames flavor.
         if let filenamesAsset {
             pasteboard.setData(filenamesAsset.data, forType: filenamesAsset.type)

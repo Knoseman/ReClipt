@@ -1,17 +1,17 @@
 //
-//  CPYUtilities.swift
+//  ReCliptUtilities.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2015/06/21.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 import IOKit
 
-final class CPYUtilities {
+final class ReCliptUtilities {
     // ref: https://gist.github.com/vadimpiven/3373bb2592d59560b5d698ba1e2ed7e4
     static let deviceID: String? = {
         let platformExpert = IOServiceGetMatchingService(

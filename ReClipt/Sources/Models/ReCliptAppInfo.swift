@@ -1,16 +1,16 @@
 //
-//  CPYAppInfo.swift
+//  ReCliptAppInfo.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/08/08.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-final class CPYAppInfo: NSObject, NSCoding {
+final class ReCliptAppInfo: NSObject, NSCoding {
 
     // MARK: - Properties
     let identifier: String
@@ -41,7 +41,7 @@ final class CPYAppInfo: NSObject, NSCoding {
 
     // MARK: - Equatable
     override func isEqual(_ object: Any?) -> Bool {
-        guard let object = object as? CPYAppInfo else { return false }
+        guard let object = object as? ReCliptAppInfo else { return false }
         return identifier == object.identifier && name == object.name
     }
 

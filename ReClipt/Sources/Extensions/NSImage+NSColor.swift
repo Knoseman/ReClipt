@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/11/21.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa

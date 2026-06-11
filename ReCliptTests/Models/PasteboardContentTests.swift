@@ -3,7 +3,7 @@
 //
 //  ReClipt
 //
-//  Created by Shunsuke Furubayashi on 2026/05/28.
+//  Created by ReClipt on 2026/06/11.
 //
 //  Copyright © 2015-2026 ReClipt Project.
 //
@@ -157,7 +157,7 @@ struct PasteboardContentTests {
         let deprecatedContent = try #require(
             PasteboardContent(
                 assets: [
-                    PasteboardContent.Asset(type: .deprecatedString, data: Data("Legacy".utf8))
+                    PasteboardContent.Asset(type: .deprecatedString, data: Data("Archived".utf8))
                 ]
             )
         )
@@ -173,7 +173,7 @@ struct PasteboardContentTests {
         #expect(modernContent.isOnlyStringType)
         #expect(modernContent.stringValue == "Hello")
         #expect(deprecatedContent.isOnlyStringType)
-        #expect(deprecatedContent.stringValue == "Legacy")
+        #expect(deprecatedContent.stringValue == "Archived")
         #expect(!mixedContent.isOnlyStringType)
         #expect(mixedContent.stringValue == "Hello")
     }

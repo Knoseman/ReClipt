@@ -1,16 +1,16 @@
 //
-//  CPYSplitView.swift
+//  ReCliptSplitView.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/06/29.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-class CPYSplitView: NSSplitView {
+class ReCliptSplitView: NSSplitView {
 
     // MARK: - Properties
     @IBInspectable var separatorColor: NSColor = .scrollBarColor {

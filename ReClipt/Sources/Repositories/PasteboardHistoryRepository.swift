@@ -3,7 +3,7 @@
 //
 //  ReClipt
 //
-//  Created by Shunsuke Furubayashi on 2026/05/28.
+//  Created by ReClipt on 2026/06/11.
 //
 //  Copyright © 2015-2026 ReClipt Project.
 //
@@ -162,7 +162,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
                 SQLiteStore.bindText(historyStmt!, index: 1, value: id)
                 SQLiteStore.bindText(historyStmt!, index: 2, value: content.stringValue.prefix(10000).description)
                 SQLiteStore.bindText(historyStmt!, index: 3, value: NSPasteboard.PasteboardType.toJSON(content.types))
-                SQLiteStore.bindText(historyStmt!, index: 4, value: CPYUtilities.deviceID ?? "")
+                SQLiteStore.bindText(historyStmt!, index: 4, value: ReCliptUtilities.deviceID ?? "")
                 SQLiteStore.bindInt(historyStmt!, index: 5, value: updateAt)
                 sqlite3_step(historyStmt)
 

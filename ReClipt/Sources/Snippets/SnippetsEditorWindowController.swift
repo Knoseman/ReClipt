@@ -1,19 +1,19 @@
 //
-//  CPYSnippetsEditorWindowController.swift
+//  SnippetsEditorWindowController.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/05/18.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
 
-final class CPYSnippetsEditorWindowController: NSWindowController {
+final class SnippetsEditorWindowController: NSWindowController {
 
     // MARK: - Properties
-    static let sharedController: CPYSnippetsEditorWindowController = {
+    static let sharedController: SnippetsEditorWindowController = {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -24,7 +24,7 @@ final class CPYSnippetsEditorWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = NSColor(white: 0.99, alpha: 1)
-        return CPYSnippetsEditorWindowController(window: window)
+        return SnippetsEditorWindowController(window: window)
     }()
 
     private var splitView: NSSplitView!
@@ -268,7 +268,7 @@ final class CPYSnippetsEditorWindowController: NSWindowController {
 }
 
 // MARK: - Item Selected
-private extension CPYSnippetsEditorWindowController {
+private extension SnippetsEditorWindowController {
     func changeItemFocus() {
         // Reset TextView Undo/Redo history
         textView.undoManager?.removeAllActions()
@@ -293,7 +293,7 @@ private extension CPYSnippetsEditorWindowController {
 }
 
 // MARK: - NSSplitView Delegate
-extension CPYSnippetsEditorWindowController: NSSplitViewDelegate {
+extension SnippetsEditorWindowController: NSSplitViewDelegate {
     func splitView(_ splitView: NSSplitView, constrainMinCoordinate proposedMinimumPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
         proposedMinimumPosition + 150
     }
@@ -304,7 +304,7 @@ extension CPYSnippetsEditorWindowController: NSSplitViewDelegate {
 }
 
 // MARK: - NSOutlineView DataSource
-extension CPYSnippetsEditorWindowController: NSOutlineViewDataSource {
+extension SnippetsEditorWindowController: NSOutlineViewDataSource {
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         if item == nil {
             return folders.count
@@ -410,7 +410,7 @@ extension CPYSnippetsEditorWindowController: NSOutlineViewDataSource {
 }
 
 // MARK: - NSOutlineView Delegate
-extension CPYSnippetsEditorWindowController: NSOutlineViewDelegate {
+extension SnippetsEditorWindowController: NSOutlineViewDelegate {
     func outlineView(_ outlineView: NSOutlineView, willDisplayCell cell: Any, for tableColumn: NSTableColumn?, item: Any) {
         guard let cell = cell as? NSTextFieldCell else { return }
         if let folder = item as? EditorSnippetFolder {
@@ -443,7 +443,7 @@ extension CPYSnippetsEditorWindowController: NSOutlineViewDelegate {
 }
 
 // MARK: - NSTextView Delegate
-extension CPYSnippetsEditorWindowController: NSTextViewDelegate {
+extension SnippetsEditorWindowController: NSTextViewDelegate {
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
         guard let replacementString = replacementString else { return false }
         guard let snippet = outlineView.item(atRow: outlineView.selectedRow) as? EditorSnippet else { return false }

@@ -1,17 +1,17 @@
 //
-//  CPYDesignableView.swift
+//  DesignableView.swift
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2016/02/25.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Foundation
 import Cocoa
 
-@IBDesignable class CPYDesignableView: NSView {
+@IBDesignable class DesignableView: NSView {
 
     // MARK: - Properties
     @IBInspectable var backgroundColor: NSColor = .clear {

@@ -3,9 +3,9 @@
 //
 //  ReClipt
 //
-//  Created by Econa77 on 2015/06/21.
+//  Created by ReClipt on 2026/06/11.
 //
-//  Copyright © 2015-2018 ReClipt Project.
+//  Copyright © 2026 ReClipt Project.
 //
 
 import Cocoa
@@ -41,12 +41,12 @@ class AppDelegate: NSObject, NSMenuItemValidation {
     // MARK: - Menu Actions
     @objc func showPreferenceWindow() {
         NSApp.activate(ignoringOtherApps: true)
-        CPYPreferencesWindowController.sharedController.showWindow(self)
+        PreferencesWindowController.sharedController.showWindow(self)
     }
 
     @objc func showSnippetEditorWindow() {
         NSApp.activate(ignoringOtherApps: true)
-        CPYSnippetsEditorWindowController.sharedController.showWindow(self)
+        SnippetsEditorWindowController.sharedController.showWindow(self)
     }
 
     @objc func terminate() {
@@ -142,7 +142,7 @@ extension AppDelegate: NSApplicationDelegate {
         // Environments
         AppEnvironment.replaceCurrent(environment: AppEnvironment.fromStorage())
         // UserDefaults
-        CPYUtilities.registerUserDefaultKeys()
+        ReCliptUtilities.registerUserDefaultKeys()
 
         // Check Accessibility Permission
         AppEnvironment.current.accessibilityService.isAccessibilityEnabled(isPrompt: true)
