@@ -15,4 +15,4 @@ DEVELOPMENT_TEAM = BBCHAJ584H
 PROVISIONING_PROFILE_SPECIFIER[config=Debug] = ReCliptDevelopment
 PROVISIONING_PROFILE_SPECIFIER[config=Release] = ReCliptDistribution
 
-// #include "Configurations/CodeSigning-AdHoc.xcconfig"
+#include "Configurations/CodeSigning-AdHoc.xcconfig"

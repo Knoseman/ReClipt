@@ -190,13 +190,15 @@
 			path = Configurations;
 			sourceTree = "<group>";
 		};
-			C54C29D32FC3E1F500EF30FB /* Database */ = {
-				isa = PBXGroup;
-				children = (
-												);
-				path = Database;
-				sourceTree = "<group>";
-			};
+		C54C29D32FC3E1F500EF30FB /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				62651FF8A56464869CAA6BCC /* SQLiteStore.swift */,
+				A9207436304A78484CE9D480 /* SQLiteDataSchema.swift */,
+			);
+			path = Database;
+			sourceTree = "<group>";
+		};
 		C5700B452FC40BBF00C8F965 /* Repositories */ = {
 			isa = PBXGroup;
 			children = (
@@ -209,7 +211,8 @@
 		C5700B472FC5C0DB00C8F965 /* Database */ = {
 			isa = PBXGroup;
 			children = (
-							);
+				85499D3DEAA88981F37B087B /* SQLiteStoreTests.swift */,
+			);
 			path = Database;
 			sourceTree = "<group>";
 		};
@@ -567,7 +570,6 @@
 				"pt-BR",
 			);
 			mainGroup = FAC43DBD1B35D8B100C06102;
-			);
 			preferredProjectObjectVersion = 46;
 			productRefGroup = FAC43DC71B35D8B100C06102 /* Products */;
 			projectDirPath = "";
@@ -638,9 +640,9 @@
 				FA1DB5121DDCB4C0007F95C8 /* PreferencesWindowController.swift in Sources */,
 				FAE911BB1DE054F1008A4BEC /* NSCoding+Archive.swift in Sources */,
 						FA3778951F3B6920003B5BAB /* Environment.swift in Sources */,
-				62651FF8A56464869CAA6BCC /* SQLiteStore.swift in Sources */,
-				A9207436304A78484CE9D480 /* SQLiteDataSchema.swift in Sources */,
-				C8F43078DD30942AEB9EC87D /* HotKeyRecorderView.swift in Sources */,
+				5FB498E2B395CA773D878430 /* SQLiteStore.swift in Sources */,
+				35C94F6EE6837966FB612843 /* SQLiteDataSchema.swift in Sources */,
+				0CEB708B12B68E2E6CCB7484 /* HotKeyRecorderView.swift in Sources */,
 			);
 		};
 		FAC43DD41B35D8B100C06102 /* Sources */ = {
@@ -653,7 +655,7 @@
 				C57100052FCEB01000C8F965 /* PasteboardHistoryRepositoryTests.swift in Sources */,
 				C522FB992FCC019100E61800 /* PasteboardAvailableTypeTests.swift in Sources */,
 				C57100012FCAE00000C8F965 /* SnippetRepositoryTests.swift in Sources */,
-				85499D3DEAA88981F37B087B /* SQLiteStoreTests.swift in Sources */,
+				855459DB7600875E683D0186 /* SQLiteStoreTests.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */

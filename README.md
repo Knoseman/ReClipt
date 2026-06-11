@@ -19,6 +19,46 @@ For local ad-hoc builds, update `Configurations/CodeSigning.xcconfig` to include
 
 No external service configuration is required for local builds.
 
+### Command-line build
+
+This repo includes a local release build script:
+
+```bash
+./scripts/build-release.sh
+```
+
+Expected output:
+
+```text
+build/Build/Products/Release/ReClipt.app
+```
+
+The inner executable is:
+
+```text
+build/Build/Products/Release/ReClipt.app/Contents/MacOS/ReClipt
+```
+
+Notes:
+- `xcodebuild` must point to full Xcode, not Command Line Tools only.
+- If needed, run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- For local unsigned/ad-hoc builds, enable `Configurations/CodeSigning-AdHoc.xcconfig` from `Configurations/CodeSigning.xcconfig`.
+- The current project target is `arm64` only.
+
+### Package
+
+After building, create a distributable zip with:
+
+```bash
+./scripts/package-release.sh
+```
+
+Expected output:
+
+```text
+build/Build/Products/Release/ReClipt-macOS.zip
+```
+
 ## Development Notes
 
 - The app stores clipboard history, snippets, and preferences locally.
