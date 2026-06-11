@@ -9,6 +9,7 @@
 //
 
 import Cocoa
+import CryptoKit
 import Foundation
 
 struct PasteboardContent: Equatable {
@@ -147,23 +148,9 @@ private extension Data {
     }
 
     var sha256Hex: String {
-        // Simple hash using Data's built-in hash for now
-        // In production, use CommonCrypto or CryptoKit if available
-        // For zero-dependency, we use a simple combined hash
-        var hashValue = 0
-        withUnsafeBytes { bytes in
-            for i in stride(from: 0, to: count, by: 4) {
-                var chunk: UInt32 = 0
-                let remaining = count - i
-                let size = Swift.min(4, remaining)
-                for j in 0..<size {
-                    chunk |= UInt32(bytes.load(fromByteOffset: i + j, as: UInt8.self)) << (j * 8)
-                }
-                hashValue = hashValue &* 31 &+ Int(chunk)
-            }
-        }
-        // Use a more robust approach: combine all bytes into hex
-        return map { String(format: "%02x", $0) }.joined()
+        SHA256.hash(data: self)
+            .map { String(format: "%02x", $0) }
+            .joined()
     }
 }
 
