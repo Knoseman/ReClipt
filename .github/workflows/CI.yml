@@ -1,0 +1,55 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Cache Swift packages
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: .spm-cache
+        key: spm-${{ runner.os }}-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          spm-${{ runner.os }}-
+
+    - name: Run tests
+      run: |
+        xcodebuild \
+          CODE_SIGN_IDENTITY=- \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          -scheme "ReClipt" \
+          -project ReClipt.xcodeproj \
+          -clonedSourcePackagesDirPath "$GITHUB_WORKSPACE/.spm-cache/SourcePackages" \
+          -packageCachePath "$GITHUB_WORKSPACE/.spm-cache/PackageCache" \
+          -skipPackagePluginValidation \
+          -skipMacroValidation \
+          clean test
+
+    - name: Verify Apple Silicon build
+      run: |
+        xcodebuild \
+          CODE_SIGN_IDENTITY=- \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          ARCHS=arm64 \
+          ONLY_ACTIVE_ARCH=NO \
+          -scheme "ReClipt" \
+          -project ReClipt.xcodeproj \
+          -configuration Release \
+          -derivedDataPath "$GITHUB_WORKSPACE/build" \
+          -clonedSourcePackagesDirPath "$GITHUB_WORKSPACE/.spm-cache/SourcePackages" \
+          -packageCachePath "$GITHUB_WORKSPACE/.spm-cache/PackageCache" \
+          -skipPackagePluginValidation \
+          -skipMacroValidation \
+          clean build
+
+        binary="$GITHUB_WORKSPACE/build/Build/Products/Release/ReClipt.app/Contents/MacOS/ReClipt"
+        lipo "$binary" -verify_arch arm64

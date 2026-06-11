@@ -1,0 +1,11 @@
+// 
+//  ReClipt.xcconfig
+//
+//  ReClipt
+// 
+//  Created by Shunsuke Furubayashi on 2026/05/27.
+// 
+//  Copyright © 2015-2026 ReClipt Project.
+//
+
+#include "Configurations/CodeSigning.xcconfig"

@@ -1,0 +1,16 @@
+// 
+//  CodeSigning-AdHoc.xcconfig
+//
+//  ReClipt
+// 
+//  Created by Shunsuke Furubayashi on 2026/05/27.
+// 
+//  Copyright © 2015-2026 ReClipt Project.
+//
+
+CODE_SIGN_IDENTITY[config=Debug] = -
+CODE_SIGN_IDENTITY[config=Release] = -
+CODE_SIGN_STYLE = Manual
+DEVELOPMENT_TEAM =
+PROVISIONING_PROFILE_SPECIFIER[config=Debug] =
+PROVISIONING_PROFILE_SPECIFIER[config=Release] =
