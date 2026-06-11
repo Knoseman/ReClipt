@@ -8,11 +8,11 @@
 //  Copyright © 2015-2026 ReClipt Project.
 //
 
-CODE_SIGN_IDENTITY[config=Debug] = Mac Developer
-CODE_SIGN_IDENTITY[config=Release] = Developer ID Application
-CODE_SIGN_STYLE = Manual
-DEVELOPMENT_TEAM = BBCHAJ584H
-PROVISIONING_PROFILE_SPECIFIER[config=Debug] = ReCliptDevelopment
-PROVISIONING_PROFILE_SPECIFIER[config=Release] = ReCliptDistribution
+CODE_SIGN_IDENTITY[config=Debug] = Apple Development
+CODE_SIGN_IDENTITY[config=Release] = Apple Development
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = 894T922935
+PROVISIONING_PROFILE_SPECIFIER[config=Debug] =
+PROVISIONING_PROFILE_SPECIFIER[config=Release] =
 
-#include "Configurations/CodeSigning-AdHoc.xcconfig"
+// #include "Configurations/CodeSigning-AdHoc.xcconfig"

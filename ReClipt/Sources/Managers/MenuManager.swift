@@ -34,6 +34,8 @@ final class MenuManager: NSObject {
     private var historyObserver: NSObjectProtocol?
     private var snippetObserver: NSObjectProtocol?
     private var defaultsObserver: NSObjectProtocol?
+    private var currentStatusType: StatusType = .none
+    private var isUpdatingStatusItem = false
 
     // MARK: - Enum Values
     enum StatusType: Int {
@@ -136,8 +138,10 @@ private extension MenuManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.createMainMenu()
-            self?.updateStatusItem()
+            guard let self else { return }
+            guard !self.isUpdatingStatusItem else { return }
+            self.createMainMenu()
+            self.updateStatusItem()
         }
     }
 
@@ -163,13 +167,21 @@ private extension MenuManager {
         mainMenu?.addItem(NSMenuItem.separator())
 
         if AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.addClearHistoryMenuItem) {
-            mainMenu?.addItem(NSMenuItem(title: String(localized: "Clear History"), action: #selector(AppDelegate.clearAllHistory)))
+            let clearHistoryItem = NSMenuItem(title: String(localized: "Clear History"), action: #selector(AppDelegate.clearAllHistory))
+            clearHistoryItem.target = NSApp.delegate
+            mainMenu?.addItem(clearHistoryItem)
         }
 
-        mainMenu?.addItem(NSMenuItem(title: String(localized: "Edit Snippets"), action: #selector(AppDelegate.showSnippetEditorWindow)))
-        mainMenu?.addItem(NSMenuItem(title: String(localized: "Preferences"), action: #selector(AppDelegate.showPreferenceWindow)))
+        let editSnippetsItem = NSMenuItem(title: String(localized: "Edit Snippets"), action: #selector(AppDelegate.showSnippetEditorWindow))
+        editSnippetsItem.target = NSApp.delegate
+        mainMenu?.addItem(editSnippetsItem)
+        let preferencesItem = NSMenuItem(title: String(localized: "Preferences"), action: #selector(AppDelegate.showPreferenceWindow))
+        preferencesItem.target = NSApp.delegate
+        mainMenu?.addItem(preferencesItem)
         mainMenu?.addItem(NSMenuItem.separator())
-        mainMenu?.addItem(NSMenuItem(title: String(localized: "Quit ReClipt"), action: #selector(AppDelegate.terminate)))
+        let quitItem = NSMenuItem(title: String(localized: "Quit ReClipt"), action: #selector(AppDelegate.terminate))
+        quitItem.target = NSApp.delegate
+        mainMenu?.addItem(quitItem)
 
         statusItem?.menu = mainMenu
     }
@@ -249,8 +261,9 @@ private extension MenuManager {
         var subMenuIndex = 1 + placeInLine
 
         let ascending = !AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.reorderClipsAfterPasting)
-        let isShowImage = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
-        let isShowColorCode = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
+        let showsMenuItemIcons = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu)
+        let isShowImage = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
+        let isShowColorCode = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
         let historyDetails = pasteboardHistoryRepository.fetchHistoryDetails(
             ascending: ascending,
             includesThumbnailAsset: isShowImage || isShowColorCode,
@@ -292,13 +305,14 @@ private extension MenuManager {
         let history = historyDetail.history
         let isMarkWithNumber = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.menuItemsAreMarkedWithNumbers)
         let isShowToolTip = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showToolTipOnMenuItem)
-        let isShowImage = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
-        let isShowColorCode = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
+        let showsMenuItemIcons = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu)
+        let isShowImage = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
+        let isShowColorCode = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
         let addNumbericKeyEquivalents = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.addNumericKeyEquivalents)
 
         var keyEquivalent = ""
 
-        if addNumbericKeyEquivalents && (index <= kMaxKeyEquivalents) {
+        if addNumbericKeyEquivalents && index < kMaxKeyEquivalents {
             let isStartFromZero = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.menuItemsTitleStartWithZero)
 
             var shortCutNumber = (isStartFromZero) ? index : index + 1
@@ -314,6 +328,7 @@ private extension MenuManager {
         let titleWithMark = menuItemTitle(title, listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
 
         let menuItem = NSMenuItem(title: titleWithMark, action: #selector(AppDelegate.selectHistoryMenuItem(_:)), keyEquivalent: keyEquivalent)
+        menuItem.target = NSApp.delegate
         menuItem.representedObject = history.id
 
         if isShowToolTip {
@@ -388,6 +403,7 @@ private extension MenuManager {
         let titleWithMark = menuItemTitle(title, listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
 
         let menuItem = NSMenuItem(title: titleWithMark, action: #selector(AppDelegate.selectSnippetMenuItem(_:)), keyEquivalent: "")
+        menuItem.target = NSApp.delegate
         menuItem.representedObject = snippet.id
         menuItem.toolTip = snippet.content
         menuItem.image = (isShowIcon) ? snippetIcon : nil
@@ -399,18 +415,25 @@ private extension MenuManager {
 // MARK: - Status Item
 private extension MenuManager {
     func changeStatusItem(_ type: StatusType) {
+        if currentStatusType == type {
+            if type == .none {
+                guard statusItem != nil else { return }
+            } else if statusItem != nil {
+                return
+            }
+        }
+
+        isUpdatingStatusItem = true
+        defer {
+            currentStatusType = type
+            isUpdatingStatusItem = false
+        }
+
         removeStatusItem()
         if type == .none { return }
 
-        let image: NSImage?
-        switch type {
-        case .black:
-            image = NSImage(named: "statusbar_menu_black")
-        case .white:
-            image = NSImage(named: "statusbar_menu_white")
-        case .none: return
-        }
-        image?.isTemplate = true
+        let image = makeStatusImage(for: type)
+        image?.isTemplate = type == .black
 
         statusItem = NSStatusBar.system.statusItem(withLength: -1)
         statusItem?.image = image
@@ -423,6 +446,26 @@ private extension MenuManager {
         if let item = statusItem {
             NSStatusBar.system.removeStatusItem(item)
             statusItem = nil
+        }
+    }
+
+    func makeStatusImage(for type: StatusType) -> NSImage? {
+        switch type {
+        case .black:
+            if let symbolImage = NSImage(
+                systemSymbolName: "clipboard",
+                accessibilityDescription: Constants.Application.name
+            ) {
+                let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+                let image = symbolImage.withSymbolConfiguration(configuration) ?? symbolImage
+                image.size = NSSize(width: 18, height: 18)
+                return image
+            }
+            return NSImage(named: "statusbar_menu_black")
+        case .white:
+            return NSImage(named: "statusbar_menu_black") ?? NSImage(named: "statusbar_menu_white")
+        case .none:
+            return nil
         }
     }
 }

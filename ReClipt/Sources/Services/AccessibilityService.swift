@@ -8,10 +8,13 @@
 //  Copyright © 2026 ReClipt Project.
 //
 
-import Foundation
 import Cocoa
+import Foundation
 
-final class AccessibilityService {}
+final class AccessibilityService {
+    private var hasShownAccessibilityAlertThisSession = false
+    private var hasShownPasteFallbackAlertThisSession = false
+}
 
 // MARK: - Permission
 extension AccessibilityService {
@@ -25,9 +28,8 @@ extension AccessibilityService {
         if AXIsProcessTrustedWithOptions(opts) {
             return true
         }
-        // AXIsProcessTrustedWithOptions can return false for unsigned/ad-hoc signed
-        // builds even when accessibility is granted. Verify with a practical test
-        // before showing any prompt.
+        // AXIsProcessTrustedWithOptions can lag behind the actual TCC state.
+        // Probe a harmless accessibility attribute before showing a prompt.
         var value: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(
             AXUIElementCreateSystemWide(),
@@ -41,28 +43,51 @@ extension AccessibilityService {
         if result == .success || result == .noValue {
             return true
         }
-        if isPrompt {
+        if isPrompt && !hasShownAccessibilityAlertThisSession {
             let promptOpts = [checkOptionPromptKey: true] as CFDictionary
             AXIsProcessTrustedWithOptions(promptOpts)
+            hasShownAccessibilityAlertThisSession = true
         }
         return false
     }
 
     func showAccessibilityAuthenticationAlert() {
+        guard !hasShownAccessibilityAlertThisSession else { return }
+        hasShownAccessibilityAlertThisSession = true
+
         let alert = NSAlert()
         alert.messageText = String(localized: "Please allow Accessibility")
-        alert.informativeText = String(localized: "To do this action please allow Accessibility in Security Privacy preferences located in System Preferences")
+        alert.informativeText = String(localized: "To paste snippets, allow ReClipt in System Settings > Privacy & Security > Accessibility. If you just enabled it, quit and reopen ReClipt before testing again.")
         alert.addButton(withTitle: String(localized: "Open System Preferences"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         NSApp.activate(ignoringOtherApps: true)
 
         if alert.runModal() == NSApplication.ModalResponse.alertFirstButtonReturn {
             guard !openAccessibilitySettingWindow() else { return }
-            isAccessibilityEnabled(isPrompt: true)
+            let checkOptionPromptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+            let promptOpts = [checkOptionPromptKey: true] as CFDictionary
+            AXIsProcessTrustedWithOptions(promptOpts)
         }
     }
 
     func openAccessibilitySettingWindow() -> Bool {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return false }
         return NSWorkspace.shared.open(url)
+    }
+
+    func showPasteFallbackAlert() {
+        guard !hasShownPasteFallbackAlertThisSession else { return }
+        hasShownPasteFallbackAlertThisSession = true
+
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Snippet copied to clipboard")
+        alert.informativeText = String(localized: "Automatic paste is unavailable because macOS Accessibility trust is not resolving for the current app identity. The snippet is already on your clipboard. Press Command-V to paste it manually.")
+        alert.addButton(withTitle: String(localized: "Open System Preferences"))
+        alert.addButton(withTitle: String(localized: "OK"))
+        NSApp.activate(ignoringOtherApps: true)
+
+        if alert.runModal() == NSApplication.ModalResponse.alertFirstButtonReturn {
+            _ = openAccessibilitySettingWindow()
+        }
     }
 }

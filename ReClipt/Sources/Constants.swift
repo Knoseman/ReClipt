@@ -54,8 +54,6 @@ struct Constants {
         static let showImageInTheMenu = "showImageInTheMenu"
         static let addNumericKeyEquivalents = "addNumericKeyEquivalents"
         static let maxLengthOfToolTip = "maxLengthOfToolTipKey"
-        static let loginItem = "loginItem"
-        static let suppressAlertForLoginItem = "suppressAlertForLoginItem"
         static let showStatusItem = "kReCliptPrefShowStatusItemKey"
         static let thumbnailWidth = "thumbnailWidth"
         static let thumbnailHeight = "thumbnailHeight"
@@ -63,7 +61,6 @@ struct Constants {
         static let copySameHistory = "kReCliptPrefCopySameHistroy"
         static let suppressAlertForDeleteSnippet = "kReCliptSuppressAlertForDeleteSnippet"
         static let excludeApplications = "kReCliptExcludeApplications"
-        static let collectCrashReport = "kReCliptCollectCrashReport"
         static let showColorPreviewInTheMenu = "kReCliptPrefShowColorPreviewInTheMenu"
     }
 

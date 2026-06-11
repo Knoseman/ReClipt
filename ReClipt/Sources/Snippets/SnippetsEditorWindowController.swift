@@ -22,8 +22,6 @@ final class SnippetsEditorWindowController: NSWindowController {
         )
         window.title = String(localized: "Edit Snippets")
         window.titlebarAppearsTransparent = true
-        window.appearance = NSAppearance(named: .aqua)
-        window.backgroundColor = NSColor(white: 0.99, alpha: 1)
         return SnippetsEditorWindowController(window: window)
     }()
 
@@ -35,6 +33,7 @@ final class SnippetsEditorWindowController: NSWindowController {
 
     private let snippetRepository = SnippetRepository()
     private var folders = [EditorSnippetFolder]()
+    private var hasConfiguredWindow = false
     private var selectedFolder: EditorSnippetFolder? {
         guard let item = outlineView.item(atRow: outlineView.selectedRow) else { return nil }
         return item as? EditorSnippetFolder ?? outlineView.parent(forItem: item) as? EditorSnippetFolder
@@ -43,6 +42,22 @@ final class SnippetsEditorWindowController: NSWindowController {
     // MARK: - Window Life Cycle
     override func windowDidLoad() {
         super.windowDidLoad()
+        configureWindowIfNeeded()
+    }
+
+    override func showWindow(_ sender: Any?) {
+        configureWindowIfNeeded()
+        super.showWindow(sender)
+        window?.center()
+        window?.makeKeyAndOrderFront(sender)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func configureWindowIfNeeded() {
+        guard !hasConfiguredWindow else { return }
+
+        hasConfiguredWindow = true
+        window?.setFrameAutosaveName("SnippetsEditorWindow")
         setupUI()
         folders = snippetRepository.fetchFolderDetails().map(EditorSnippetFolder.init)
         outlineView.reloadData()
@@ -51,11 +66,6 @@ final class SnippetsEditorWindowController: NSWindowController {
             outlineView.selectRowIndexes(IndexSet(integer: outlineView.row(forItem: folder)), byExtendingSelection: false)
             changeItemFocus()
         }
-    }
-
-    override func showWindow(_ sender: Any?) {
-        super.showWindow(sender)
-        window?.orderFrontRegardless()
     }
 
     // MARK: - UI Setup
@@ -71,7 +81,11 @@ final class SnippetsEditorWindowController: NSWindowController {
 
         // Left side - Outline view
         let leftView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: contentView.frame.height))
-        let scrollView = NSScrollView(frame: leftView.bounds)
+        let leftToolbarHeight: CGFloat = 40
+        let toolbarView = NSView(frame: NSRect(x: 0, y: leftView.frame.height - leftToolbarHeight, width: leftView.frame.width, height: leftToolbarHeight))
+        toolbarView.autoresizingMask = [.width, .minYMargin]
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: leftView.frame.width, height: leftView.frame.height - leftToolbarHeight))
         scrollView.autoresizingMask = [.width, .height]
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
@@ -86,29 +100,28 @@ final class SnippetsEditorWindowController: NSWindowController {
         leftView.addSubview(scrollView)
 
         // Toolbar buttons
-        let addSnippetButton = NSButton(frame: NSRect(x: 5, y: leftView.frame.height - 30, width: 60, height: 24))
+        let addSnippetButton = NSButton(frame: NSRect(x: 8, y: 8, width: 72, height: 24))
         addSnippetButton.title = "+ Snippet"
         addSnippetButton.bezelStyle = .smallSquare
         addSnippetButton.target = self
         addSnippetButton.action = #selector(addSnippetButtonTapped(_:))
-        addSnippetButton.autoresizingMask = [.minYMargin]
-        leftView.addSubview(addSnippetButton)
+        toolbarView.addSubview(addSnippetButton)
 
-        let addFolderButton = NSButton(frame: NSRect(x: 70, y: leftView.frame.height - 30, width: 60, height: 24))
+        let addFolderButton = NSButton(frame: NSRect(x: 86, y: 8, width: 72, height: 24))
         addFolderButton.title = "+ Folder"
         addFolderButton.bezelStyle = .smallSquare
         addFolderButton.target = self
         addFolderButton.action = #selector(addFolderButtonTapped(_:))
-        addFolderButton.autoresizingMask = [.minYMargin]
-        leftView.addSubview(addFolderButton)
+        toolbarView.addSubview(addFolderButton)
 
-        let deleteButton = NSButton(frame: NSRect(x: 135, y: leftView.frame.height - 30, width: 60, height: 24))
+        let deleteButton = NSButton(frame: NSRect(x: 164, y: 8, width: 28, height: 24))
         deleteButton.title = "-"
         deleteButton.bezelStyle = .smallSquare
         deleteButton.target = self
         deleteButton.action = #selector(deleteButtonTapped(_:))
-        deleteButton.autoresizingMask = [.minYMargin]
-        leftView.addSubview(deleteButton)
+        toolbarView.addSubview(deleteButton)
+
+        leftView.addSubview(toolbarView)
 
         splitView.addSubview(leftView)
 

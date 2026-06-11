@@ -25,7 +25,7 @@ final class ClipService {
     // MARK: - Clips
     func startMonitoring() {
         stopMonitoring()
-        storeTypes = AppEnvironment.current.defaults.object(forKey: Constants.UserDefaults.storeTypes) as? [String: NSNumber] ?? [:]
+        reloadStoreTypes()
         scheduleTimer(interval: 0.5)
     }
 
@@ -46,6 +46,10 @@ final class ClipService {
 
     func incrementChangeCount() {
         cachedChangeCount += 1
+    }
+
+    func reloadStoreTypes() {
+        storeTypes = AppEnvironment.current.defaults.object(forKey: Constants.UserDefaults.storeTypes) as? [String: NSNumber] ?? [:]
     }
 
     // MARK: - Private Timer Management

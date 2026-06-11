@@ -93,13 +93,16 @@ extension PasteService {
     private func copyToPasteboard(with content: PasteboardContent) {
         lock.lock(); defer { lock.unlock() }
 
-        if isPastePlainText {
+        if isPastePlainText || content.isOnlyStringType {
             copyToPasteboard(with: content.stringValue)
             return
         }
 
         let pasteboard = NSPasteboard.general
         content.writeObjects(to: pasteboard)
+        if pasteboard.pasteboardItems?.isEmpty ?? true, !content.stringValue.isEmpty {
+            copyToPasteboard(with: content.stringValue)
+        }
     }
 }
 
@@ -109,7 +112,7 @@ extension PasteService {
         guard AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.inputPasteCommand) else { return }
         // Check Accessibility Permission
         guard AppEnvironment.current.accessibilityService.isAccessibilityEnabled(isPrompt: false) else {
-            AppEnvironment.current.accessibilityService.showAccessibilityAuthenticationAlert()
+            AppEnvironment.current.accessibilityService.showPasteFallbackAlert()
             return
         }
 

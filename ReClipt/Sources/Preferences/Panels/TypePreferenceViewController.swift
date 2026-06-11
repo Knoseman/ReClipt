@@ -45,5 +45,7 @@ final class TypePreferenceViewController: NSViewController {
         let type = PasteboardAvailableType.allCases[sender.tag]
         storeTypes[type.rawValue] = (sender.state == .on)
         AppEnvironment.current.defaults.set(storeTypes, forKey: Constants.UserDefaults.storeTypes)
+        AppEnvironment.current.defaults.synchronize()
+        AppEnvironment.current.clipService.reloadStoreTypes()
     }
 }

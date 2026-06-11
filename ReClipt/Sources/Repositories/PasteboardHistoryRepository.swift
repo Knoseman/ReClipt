@@ -24,6 +24,7 @@ protocol PasteboardHistoryRepositoryProtocol {
     func fetchContent(id: PasteboardHistory.ID) -> PasteboardContent?
 
     func save(id: PasteboardHistory.ID, content: PasteboardContent, updateAt: Int)
+    func touchHistory(id: PasteboardHistory.ID, updateAt: Int)
     func deleteHistory(id: PasteboardHistory.ID)
     func deleteAll()
     func deleteOverflowingHistories(maxHistorySize: Int)
@@ -119,7 +120,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
     func fetchContent(id: PasteboardHistory.ID) -> PasteboardContent? {
         do {
             return try store.read { database in
-                let sql = "SELECT pasteboardType, data FROM pasteboardHistoryAssets WHERE pasteboardHistoryID = ? ORDER BY index ASC"
+                let sql = "SELECT pasteboardType, data FROM pasteboardHistoryAssets WHERE pasteboardHistoryID = ? ORDER BY \"index\" ASC"
                 var statement: OpaquePointer?
                 guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
                     return nil
@@ -168,7 +169,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
 
                 if !exists {
                     let assetSQL = """
-                        INSERT INTO pasteboardHistoryAssets (id, pasteboardHistoryID, index, pasteboardType, data)
+                        INSERT INTO pasteboardHistoryAssets (id, pasteboardHistoryID, "index", pasteboardType, data)
                         VALUES (?, ?, ?, ?, ?)
                     """
                     for (index, asset) in content.assets.enumerated() {
@@ -201,6 +202,23 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
             NotificationCenter.default.post(name: Self.historyDidChangeNotification, object: nil)
         } catch {
             // Silently fail for now
+        }
+    }
+
+    func touchHistory(id: PasteboardHistory.ID, updateAt: Int) {
+        do {
+            try store.write { database in
+                let sql = "UPDATE pasteboardHistories SET updateAt = ? WHERE id = ?"
+                var statement: OpaquePointer?
+                guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return }
+                defer { sqlite3_finalize(statement) }
+                SQLiteStore.bindInt(statement!, index: 1, value: updateAt)
+                SQLiteStore.bindText(statement!, index: 2, value: id)
+                sqlite3_step(statement)
+            }
+            NotificationCenter.default.post(name: Self.historyDidChangeNotification, object: nil)
+        } catch {
+            // Silently fail
         }
     }
 

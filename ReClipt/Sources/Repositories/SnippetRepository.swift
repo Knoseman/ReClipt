@@ -73,7 +73,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     func fetchSnippet(id: Snippet.ID) -> Snippet? {
         do {
             return try store.read { database in
-                let sql = "SELECT id, folderID, title, content, index, isEnabled FROM snippets WHERE id = ? LIMIT 1"
+                let sql = "SELECT id, folderID, title, content, \"index\", isEnabled FROM snippets WHERE id = ? LIMIT 1"
                 var statement: OpaquePointer?
                 guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
                 defer { sqlite3_finalize(statement) }
@@ -100,7 +100,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                     isEnabled: true
                 )
                 let sql = """
-                    INSERT INTO snippetFolders (id, title, index, isEnabled)
+                    INSERT INTO snippetFolders (id, title, "index", isEnabled)
                     VALUES (?, ?, ?, ?)
                 """
                 var statement: OpaquePointer?
@@ -133,7 +133,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                         isEnabled: true
                     )
                     let folderSQL = """
-                        INSERT INTO snippetFolders (id, title, index, isEnabled)
+                        INSERT INTO snippetFolders (id, title, "index", isEnabled)
                         VALUES (?, ?, ?, ?)
                     """
                     var folderStmt: OpaquePointer?
@@ -156,7 +156,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                             isEnabled: true
                         )
                         let snippetSQL = """
-                            INSERT INTO snippets (id, folderID, title, content, index, isEnabled)
+                            INSERT INTO snippets (id, folderID, title, content, "index", isEnabled)
                             VALUES (?, ?, ?, ?, ?, ?)
                         """
                         var snippetStmt: OpaquePointer?
@@ -218,7 +218,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     func updateFolderIndexes(_ folderIDs: [SnippetFolder.ID]) {
         do {
             try store.write { database in
-                let sql = "UPDATE snippetFolders SET index = ? WHERE id = ?"
+                let sql = "UPDATE snippetFolders SET \"index\" = ? WHERE id = ?"
                 for (index, folderID) in folderIDs.enumerated() {
                     var statement: OpaquePointer?
                     guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { continue }
@@ -266,7 +266,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                     isEnabled: true
                 )
                 let sql = """
-                    INSERT INTO snippets (id, folderID, title, content, index, isEnabled)
+                    INSERT INTO snippets (id, folderID, title, content, "index", isEnabled)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """
                 var statement: OpaquePointer?
@@ -342,7 +342,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     func updateSnippetIndexes(_ snippetIDs: [Snippet.ID]) {
         do {
             try store.write { database in
-                let sql = "UPDATE snippets SET index = ? WHERE id = ?"
+                let sql = "UPDATE snippets SET \"index\" = ? WHERE id = ?"
                 for (index, snippetID) in snippetIDs.enumerated() {
                     var statement: OpaquePointer?
                     guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { continue }
@@ -369,7 +369,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                 SQLiteStore.bindText(stmt1!, index: 2, value: id.uuidString)
                 sqlite3_step(stmt1)
 
-                let sql2 = "UPDATE snippets SET index = ? WHERE id = ?"
+                let sql2 = "UPDATE snippets SET \"index\" = ? WHERE id = ?"
                 for (index, snippetID) in snippetIDs.enumerated() {
                     var stmt2: OpaquePointer?
                     guard sqlite3_prepare_v2(database, sql2, -1, &stmt2, nil) == SQLITE_OK else { continue }
@@ -404,7 +404,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     // MARK: - Private Helpers
 
     private func fetchAllFolders(database: OpaquePointer) -> [SnippetFolder] {
-        let sql = "SELECT id, title, index, isEnabled FROM snippetFolders ORDER BY index"
+        let sql = "SELECT id, title, \"index\", isEnabled FROM snippetFolders ORDER BY \"index\""
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(statement) }
@@ -416,7 +416,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     private func fetchAllSnippets(database: OpaquePointer) -> [Snippet] {
-        let sql = "SELECT id, folderID, title, content, index, isEnabled FROM snippets ORDER BY index"
+        let sql = "SELECT id, folderID, title, content, \"index\", isEnabled FROM snippets ORDER BY \"index\""
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(statement) }
@@ -428,7 +428,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     private func fetchFolder(database: OpaquePointer, id: SnippetFolder.ID) -> SnippetFolder? {
-        let sql = "SELECT id, title, index, isEnabled FROM snippetFolders WHERE id = ? LIMIT 1"
+        let sql = "SELECT id, title, \"index\", isEnabled FROM snippetFolders WHERE id = ? LIMIT 1"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
         defer { sqlite3_finalize(statement) }
@@ -438,7 +438,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     private func fetchSnippetsForFolder(database: OpaquePointer, folderID: SnippetFolder.ID) -> [Snippet] {
-        let sql = "SELECT id, folderID, title, content, index, isEnabled FROM snippets WHERE folderID = ? ORDER BY index"
+        let sql = "SELECT id, folderID, title, content, \"index\", isEnabled FROM snippets WHERE folderID = ? ORDER BY \"index\""
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(statement) }
@@ -451,7 +451,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     private func fetchMaxFolderIndex(database: OpaquePointer) -> Int {
-        let sql = "SELECT MAX(index) FROM snippetFolders"
+        let sql = "SELECT MAX(\"index\") FROM snippetFolders"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return -1 }
         defer { sqlite3_finalize(statement) }
@@ -460,7 +460,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     private func fetchMaxSnippetIndex(database: OpaquePointer, folderID: SnippetFolder.ID) -> Int {
-        let sql = "SELECT MAX(index) FROM snippets WHERE folderID = ?"
+        let sql = "SELECT MAX(\"index\") FROM snippets WHERE folderID = ?"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return -1 }
         defer { sqlite3_finalize(statement) }

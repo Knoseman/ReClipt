@@ -11,8 +11,7 @@
 import Cocoa
 import Foundation
 
-@NSApplicationMain
-class AppDelegate: NSObject, NSMenuItemValidation {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     // MARK: - Properties
     private let pasteboardHistoryRepository = PasteboardHistoryRepository()
@@ -40,11 +39,13 @@ class AppDelegate: NSObject, NSMenuItemValidation {
 
     // MARK: - Menu Actions
     @objc func showPreferenceWindow() {
+        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         NSApp.activate(ignoringOtherApps: true)
         PreferencesWindowController.sharedController.showWindow(self)
     }
 
     @objc func showSnippetEditorWindow() {
+        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         NSApp.activate(ignoringOtherApps: true)
         SnippetsEditorWindowController.sharedController.showWindow(self)
     }
@@ -83,6 +84,9 @@ class AppDelegate: NSObject, NSMenuItemValidation {
             return
         }
 
+        if AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.reorderClipsAfterPasting) {
+            pasteboardHistoryRepository.touchHistory(id: id, updateAt: Int(Date().timeIntervalSince1970))
+        }
         AppEnvironment.current.pasteService.paste(id: id, content: content)
     }
 
@@ -99,58 +103,15 @@ class AppDelegate: NSObject, NSMenuItemValidation {
         NSApplication.shared.terminate(nil)
     }
 
-    // MARK: - Login Item Methods
-    private func promptToAddLoginItems() {
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Launch ReClipt on system startup?")
-        alert.informativeText = String(localized: "You can change this setting in the Preferences if you want")
-        alert.addButton(withTitle: String(localized: "Launch on system startup"))
-        alert.addButton(withTitle: String(localized: "Don't Launch"))
-        alert.showsSuppressionButton = true
-        NSApp.activate(ignoringOtherApps: true)
-
-        //  Launch on system startup
-        if alert.runModal() == NSApplication.ModalResponse.alertFirstButtonReturn {
-            AppEnvironment.current.defaults.set(true, forKey: Constants.UserDefaults.loginItem)
-            AppEnvironment.current.defaults.synchronize()
-            reflectLoginItemState()
-        }
-        // Do not show this message again
-        if alert.suppressionButton?.state == NSControl.StateValue.on {
-            AppEnvironment.current.defaults.set(true, forKey: Constants.UserDefaults.suppressAlertForLoginItem)
-            AppEnvironment.current.defaults.synchronize()
-        }
-    }
-
-    private func toggleAddingToLoginItems(_ isEnable: Bool) {
-        // Use SMLoginItemSetEnabled or LaunchAgents for login items
-        // For simplicity, we'll use UserDefaults-based approach
-        // In production, implement proper login item registration
-        _ = isEnable
-    }
-
-    private func reflectLoginItemState() {
-        let isInLoginItems = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.loginItem)
-        toggleAddingToLoginItems(isInLoginItems)
-    }
 }
 
 // MARK: - NSApplication Delegate
-extension AppDelegate: NSApplicationDelegate {
-
+extension AppDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Environments
         AppEnvironment.replaceCurrent(environment: AppEnvironment.fromStorage())
         // UserDefaults
         ReCliptUtilities.registerUserDefaultKeys()
-
-        // Check Accessibility Permission
-        AppEnvironment.current.accessibilityService.isAccessibilityEnabled(isPrompt: true)
-
-        // Show Login Item
-        if !AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.loginItem) && !AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.suppressAlertForLoginItem) {
-            promptToAddLoginItems()
-        }
 
         // Services
         AppEnvironment.current.clipService.startMonitoring()
@@ -173,5 +134,4 @@ extension AppDelegate: NSApplicationDelegate {
         pruningTimer?.invalidate()
         SQLiteStore.shared.close()
     }
-
 }
