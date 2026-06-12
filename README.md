@@ -45,6 +45,29 @@ Notes:
 - For local unsigned/ad-hoc builds, enable `Configurations/CodeSigning-AdHoc.xcconfig` from `Configurations/CodeSigning.xcconfig`.
 - The current project target is `arm64` only.
 
+### Ad-hoc Release
+
+The no-subscription release path is an ad-hoc signed zip:
+
+```bash
+./scripts/build-self-signed-release.sh
+```
+
+Expected output:
+
+```text
+build/Build/Products/Release/ReClipt-macOS.zip
+```
+
+This build is not notarized by Apple. It is suitable for technical testers, but
+macOS Gatekeeper may warn or block it on first launch. If right-click > Open does
+not work, users can remove the quarantine flag after copying the app to
+`/Applications`:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/ReClipt.app
+```
+
 ### Package
 
 After building, create a distributable zip with:
