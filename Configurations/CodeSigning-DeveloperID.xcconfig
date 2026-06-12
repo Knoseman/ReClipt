@@ -1,0 +1,15 @@
+//
+//  CodeSigning-DeveloperID.xcconfig
+//
+//  ReClipt
+//
+//  Created by ReClipt on 2026/06/12.
+//
+//  Copyright © 2015-2026 ReClipt Project.
+//
+
+CODE_SIGN_IDENTITY[config=Release] = Developer ID Application
+CODE_SIGN_STYLE = Manual
+DEVELOPMENT_TEAM = 894T922935
+OTHER_CODE_SIGN_FLAGS[config=Release] = --timestamp
+PROVISIONING_PROFILE_SPECIFIER[config=Release] =

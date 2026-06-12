@@ -59,6 +59,36 @@ Expected output:
 build/Build/Products/Release/ReClipt-macOS.zip
 ```
 
+### Notarized Public Release
+
+For a release that other people can download and run normally, use Developer ID
+signing and Apple notarization. This requires:
+
+- A `Developer ID Application` certificate in the login keychain.
+- A saved notarytool credential profile. The default profile name used by this
+  repo is `ReCliptNotaryProfile`.
+
+Create the notary profile once:
+
+```bash
+xcrun notarytool store-credentials ReCliptNotaryProfile --apple-id <apple-id> --team-id 894T922935
+```
+
+Then build, notarize, staple, and package:
+
+```bash
+./scripts/build-notarized-release.sh
+```
+
+Expected output:
+
+```text
+build/Build/Products/Release/ReClipt-macOS.zip
+```
+
+The script fails early if the Developer ID certificate or notary profile is not
+available.
+
 ## Development Notes
 
 - The app stores clipboard history, snippets, and preferences locally.
