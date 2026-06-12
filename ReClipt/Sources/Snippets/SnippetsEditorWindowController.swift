@@ -26,17 +26,38 @@ final class SnippetsEditorWindowController: NSWindowController {
     }()
 
     private var splitView: NSSplitView!
+    private var searchField: NSSearchField!
     private var folderTitleTextField: NSTextField!
+    private var folderEnabledCheckbox: NSButton!
+    private var snippetTitleTextField: NSTextField!
+    private var snippetEnabledCheckbox: NSButton!
     private var textView: NSTextView!
+    private var textScrollView: NSScrollView!
     private var outlineView: NSOutlineView!
     private var folderSettingView: NSView!
+    private var snippetSettingView: NSView!
+    private var emptyStateLabel: NSTextField!
 
     private let snippetRepository = SnippetRepository()
     private var folders = [EditorSnippetFolder]()
+    private var searchQuery = ""
     private var hasConfiguredWindow = false
     private var selectedFolder: EditorSnippetFolder? {
         guard let item = outlineView.item(atRow: outlineView.selectedRow) else { return nil }
         return item as? EditorSnippetFolder ?? outlineView.parent(forItem: item) as? EditorSnippetFolder
+    }
+    private var isFiltering: Bool {
+        !normalizedSearchQuery.isEmpty
+    }
+    private var normalizedSearchQuery: String {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+    private var displayedFolders: [EditorSnippetFolder] {
+        guard isFiltering else { return folders }
+        return folders.filter { folder in
+            folder.title.lowercased().contains(normalizedSearchQuery) ||
+                folder.snippets.contains { snippetMatchesSearch($0) }
+        }
     }
 
     // MARK: - Window Life Cycle
@@ -60,7 +81,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         window?.setFrameAutosaveName("SnippetsEditorWindow")
         setupUI()
         folders = snippetRepository.fetchFolderDetails().map(EditorSnippetFolder.init)
-        outlineView.reloadData()
+        reloadSidebar()
         // Select first folder
         if let folder = folders.first {
             outlineView.selectRowIndexes(IndexSet(integer: outlineView.row(forItem: folder)), byExtendingSelection: false)
@@ -82,16 +103,33 @@ final class SnippetsEditorWindowController: NSWindowController {
         // Left side - Outline view
         let leftView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: contentView.frame.height))
         let leftToolbarHeight: CGFloat = 40
+        let searchHeight: CGFloat = 34
         let toolbarView = NSView(frame: NSRect(x: 0, y: leftView.frame.height - leftToolbarHeight, width: leftView.frame.width, height: leftToolbarHeight))
         toolbarView.autoresizingMask = [.width, .minYMargin]
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: leftView.frame.width, height: leftView.frame.height - leftToolbarHeight))
+        searchField = NSSearchField(frame: NSRect(
+            x: 8,
+            y: leftView.frame.height - leftToolbarHeight - searchHeight + 5,
+            width: leftView.frame.width - 16,
+            height: 24
+        ))
+        searchField.autoresizingMask = [.width, .minYMargin]
+        searchField.placeholderString = String(localized: "Search")
+        searchField.target = self
+        searchField.action = #selector(searchFieldChanged(_:))
+        searchField.sendsSearchStringImmediately = true
+        searchField.delegate = self
+        leftView.addSubview(searchField)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: leftView.frame.width, height: leftView.frame.height - leftToolbarHeight - searchHeight))
         scrollView.autoresizingMask = [.width, .height]
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
 
         outlineView = NSOutlineView()
-        outlineView.addTableColumn(NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name")))
+        let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
+        nameColumn.dataCell = SnippetsEditorCell(textCell: "")
+        outlineView.addTableColumn(nameColumn)
         outlineView.headerView = nil
         outlineView.dataSource = self
         outlineView.delegate = self
@@ -152,17 +190,48 @@ final class SnippetsEditorWindowController: NSWindowController {
         // Right side - Editor
         let rightView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: contentView.frame.height))
 
-        folderSettingView = NSView(frame: NSRect(x: 0, y: rightView.frame.height - 60, width: rightView.frame.width, height: 60))
+        let settingsHeight: CGFloat = 96
+        folderSettingView = NSView(frame: NSRect(x: 0, y: rightView.frame.height - settingsHeight, width: rightView.frame.width, height: settingsHeight))
         folderSettingView.autoresizingMask = [.width, .minYMargin]
 
-        folderTitleTextField = NSTextField(frame: NSRect(x: 10, y: 20, width: folderSettingView.frame.width - 20, height: 24))
+        let folderTitleLabel = NSTextField(labelWithString: String(localized: "Folder"))
+        folderTitleLabel.font = NSFont.boldSystemFont(ofSize: 13)
+        folderTitleLabel.textColor = .secondaryLabelColor
+        folderTitleLabel.frame = NSRect(x: 14, y: 66, width: 120, height: 18)
+        folderSettingView.addSubview(folderTitleLabel)
+
+        folderTitleTextField = NSTextField(frame: NSRect(x: 14, y: 36, width: folderSettingView.frame.width - 28, height: 24))
         folderTitleTextField.autoresizingMask = [.width]
         folderTitleTextField.target = self
         folderTitleTextField.action = #selector(folderTitleChanged(_:))
         folderSettingView.addSubview(folderTitleTextField)
+
+        folderEnabledCheckbox = NSButton(checkboxWithTitle: String(localized: "Enabled"), target: self, action: #selector(folderEnabledChanged(_:)))
+        folderEnabledCheckbox.frame = NSRect(x: 14, y: 8, width: 120, height: 22)
+        folderSettingView.addSubview(folderEnabledCheckbox)
         rightView.addSubview(folderSettingView)
 
-        let textScrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: rightView.frame.width, height: rightView.frame.height - 60))
+        snippetSettingView = NSView(frame: NSRect(x: 0, y: rightView.frame.height - settingsHeight, width: rightView.frame.width, height: settingsHeight))
+        snippetSettingView.autoresizingMask = [.width, .minYMargin]
+
+        let snippetTitleLabel = NSTextField(labelWithString: String(localized: "Snippet"))
+        snippetTitleLabel.font = NSFont.boldSystemFont(ofSize: 13)
+        snippetTitleLabel.textColor = .secondaryLabelColor
+        snippetTitleLabel.frame = NSRect(x: 14, y: 66, width: 120, height: 18)
+        snippetSettingView.addSubview(snippetTitleLabel)
+
+        snippetTitleTextField = NSTextField(frame: NSRect(x: 14, y: 36, width: snippetSettingView.frame.width - 28, height: 24))
+        snippetTitleTextField.autoresizingMask = [.width]
+        snippetTitleTextField.target = self
+        snippetTitleTextField.action = #selector(snippetTitleChanged(_:))
+        snippetSettingView.addSubview(snippetTitleTextField)
+
+        snippetEnabledCheckbox = NSButton(checkboxWithTitle: String(localized: "Enabled"), target: self, action: #selector(snippetEnabledChanged(_:)))
+        snippetEnabledCheckbox.frame = NSRect(x: 14, y: 8, width: 120, height: 22)
+        snippetSettingView.addSubview(snippetEnabledCheckbox)
+        rightView.addSubview(snippetSettingView)
+
+        textScrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: rightView.frame.width, height: rightView.frame.height - settingsHeight))
         textScrollView.autoresizingMask = [.width, .height]
         textScrollView.hasVerticalScroller = true
         textScrollView.borderType = .bezelBorder
@@ -175,6 +244,14 @@ final class SnippetsEditorWindowController: NSWindowController {
         textScrollView.documentView = textView
         rightView.addSubview(textScrollView)
 
+        emptyStateLabel = NSTextField(labelWithString: "")
+        emptyStateLabel.alignment = .center
+        emptyStateLabel.textColor = .secondaryLabelColor
+        emptyStateLabel.font = NSFont.systemFont(ofSize: 14)
+        emptyStateLabel.frame = NSRect(x: 24, y: (rightView.frame.height - 24) / 2, width: rightView.frame.width - 48, height: 24)
+        emptyStateLabel.autoresizingMask = [.width, .minYMargin, .maxYMargin]
+        rightView.addSubview(emptyStateLabel)
+
         splitView.addSubview(rightView)
     }
 
@@ -182,7 +259,33 @@ final class SnippetsEditorWindowController: NSWindowController {
         guard let folder = selectedFolder else { return }
         folder.title = sender.stringValue
         snippetRepository.updateFolderTitle(folder.id, title: sender.stringValue)
-        outlineView.reloadItem(folder)
+        reloadSidebar(select: folder)
+    }
+
+    @objc private func folderEnabledChanged(_ sender: NSButton) {
+        guard let folder = selectedFolder else { return }
+        folder.isEnabled = sender.state == .on
+        snippetRepository.updateFolderIsEnabled(folder.id, isEnabled: folder.isEnabled)
+        outlineView.reloadItem(folder, reloadChildren: true)
+    }
+
+    @objc private func snippetTitleChanged(_ sender: NSTextField) {
+        guard let snippet = outlineView.item(atRow: outlineView.selectedRow) as? EditorSnippet else { return }
+        snippet.title = sender.stringValue
+        snippetRepository.updateSnippetTitle(snippet.id, title: sender.stringValue)
+        reloadSidebar(select: snippet)
+    }
+
+    @objc private func snippetEnabledChanged(_ sender: NSButton) {
+        guard let snippet = outlineView.item(atRow: outlineView.selectedRow) as? EditorSnippet else { return }
+        snippet.isEnabled = sender.state == .on
+        snippetRepository.updateSnippetIsEnabled(snippet.id, isEnabled: snippet.isEnabled)
+        outlineView.reloadItem(snippet)
+    }
+
+    @objc private func searchFieldChanged(_ sender: NSSearchField) {
+        searchQuery = sender.stringValue
+        reloadSidebar()
     }
 
     // MARK: - IBActions
@@ -191,12 +294,11 @@ final class SnippetsEditorWindowController: NSWindowController {
             NSSound.beep()
             return
         }
+        clearSearchIfNeeded()
         let editorSnippet = EditorSnippet(snippet: snippet)
         folder.snippets.append(editorSnippet)
-        outlineView.reloadData()
+        reloadSidebar(select: editorSnippet)
         outlineView.expandItem(folder)
-        outlineView.selectRowIndexes(IndexSet(integer: outlineView.row(forItem: editorSnippet)), byExtendingSelection: false)
-        changeItemFocus()
     }
 
     @IBAction private func addFolderButtonTapped(_ sender: AnyObject) {
@@ -204,11 +306,10 @@ final class SnippetsEditorWindowController: NSWindowController {
             NSSound.beep()
             return
         }
+        clearSearchIfNeeded()
         let editorFolder = EditorSnippetFolder(folder: folder)
         folders.append(editorFolder)
-        outlineView.reloadData()
-        outlineView.selectRowIndexes(IndexSet(integer: outlineView.row(forItem: editorFolder)), byExtendingSelection: false)
-        changeItemFocus()
+        reloadSidebar(select: editorFolder)
     }
 
     @IBAction private func deleteButtonTapped(_ sender: AnyObject) {
@@ -234,8 +335,7 @@ final class SnippetsEditorWindowController: NSWindowController {
             folder.snippets.removeAll(where: { $0.id == snippet.id })
             snippetRepository.deleteSnippet(snippet.id)
         }
-        outlineView.reloadData()
-        changeItemFocus()
+        reloadSidebar()
     }
 
     @IBAction private func importSnippetButtonTapped(_ sender: AnyObject) {
@@ -257,8 +357,10 @@ final class SnippetsEditorWindowController: NSWindowController {
                 NSSound.beep()
                 return
             }
-            self.folders.append(contentsOf: folderDetails.map(EditorSnippetFolder.init))
-            outlineView.reloadData()
+            clearSearchIfNeeded()
+            let importedFolders = folderDetails.map(EditorSnippetFolder.init)
+            self.folders.append(contentsOf: importedFolders)
+            reloadSidebar(select: importedFolders.first)
         } catch {
             NSSound.beep()
         }
@@ -285,25 +387,85 @@ final class SnippetsEditorWindowController: NSWindowController {
 
 // MARK: - Item Selected
 private extension SnippetsEditorWindowController {
+    func reloadSidebar(select item: Any? = nil) {
+        outlineView.reloadData()
+        if isFiltering {
+            displayedFolders.forEach { outlineView.expandItem($0) }
+        }
+
+        if let item {
+            if let snippet = item as? EditorSnippet,
+               let folder = folders.first(where: { $0.id == snippet.folderID }) {
+                outlineView.expandItem(folder)
+            }
+            let row = outlineView.row(forItem: item)
+            if row >= 0 {
+                outlineView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+                changeItemFocus()
+                return
+            }
+        }
+
+        if outlineView.selectedRow >= outlineView.numberOfRows {
+            outlineView.deselectAll(nil)
+        }
+        changeItemFocus()
+    }
+
+    func clearSearchIfNeeded() {
+        guard isFiltering else { return }
+        searchQuery = ""
+        searchField.stringValue = ""
+    }
+
+    func snippets(for folder: EditorSnippetFolder) -> [EditorSnippet] {
+        guard isFiltering else { return folder.snippets }
+        if folder.title.lowercased().contains(normalizedSearchQuery) {
+            return folder.snippets
+        }
+        return folder.snippets.filter(snippetMatchesSearch)
+    }
+
+    func snippetMatchesSearch(_ snippet: EditorSnippet) -> Bool {
+        let query = normalizedSearchQuery
+        guard !query.isEmpty else { return true }
+        return snippet.title.lowercased().contains(query) || snippet.content.lowercased().contains(query)
+    }
+
     func changeItemFocus() {
         // Reset TextView Undo/Redo history
         textView.undoManager?.removeAllActions()
+        folderSettingView.isHidden = true
+        snippetSettingView.isHidden = true
+        textScrollView.isHidden = true
+        emptyStateLabel.isHidden = true
+
         guard let item = outlineView.item(atRow: outlineView.selectedRow) else {
-            folderSettingView.isHidden = true
-            textView.isHidden = true
             folderTitleTextField.stringValue = ""
+            snippetTitleTextField.stringValue = ""
+            textView.string = ""
+            emptyStateLabel.stringValue = isFiltering
+                ? String(localized: "No snippets match your search.")
+                : String(localized: "Select a folder or snippet.")
+            emptyStateLabel.isHidden = false
             return
         }
         if let folder = item as? EditorSnippetFolder {
             textView.string = ""
             folderTitleTextField.stringValue = folder.title
+            folderEnabledCheckbox.state = folder.isEnabled ? .on : .off
             folderSettingView.isHidden = false
-            textView.isHidden = true
+            emptyStateLabel.stringValue = folder.snippets.isEmpty
+                ? String(localized: "This folder is empty.")
+                : String(localized: "Select a snippet to edit its content.")
+            emptyStateLabel.isHidden = false
         } else if let snippet = item as? EditorSnippet {
             textView.string = snippet.content
+            snippetTitleTextField.stringValue = snippet.title
+            snippetEnabledCheckbox.state = snippet.isEnabled ? .on : .off
             folderTitleTextField.stringValue = ""
-            folderSettingView.isHidden = true
-            textView.isHidden = false
+            snippetSettingView.isHidden = false
+            textScrollView.isHidden = false
         }
     }
 }
@@ -323,19 +485,19 @@ extension SnippetsEditorWindowController: NSSplitViewDelegate {
 extension SnippetsEditorWindowController: NSOutlineViewDataSource {
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         if item == nil {
-            return folders.count
+            return displayedFolders.count
         } else if let folder = item as? EditorSnippetFolder {
-            return folder.snippets.count
+            return snippets(for: folder).count
         }
         return 0
     }
 
     func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
-        (item as? EditorSnippetFolder).map { !$0.snippets.isEmpty } ?? false
+        (item as? EditorSnippetFolder).map { !snippets(for: $0).isEmpty } ?? false
     }
 
     func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
-        (item as? EditorSnippetFolder).map { $0.snippets[index] as Any } ?? folders[index] as Any
+        (item as? EditorSnippetFolder).map { snippets(for: $0)[index] as Any } ?? displayedFolders[index] as Any
     }
 
     func outlineView(_ outlineView: NSOutlineView, objectValueFor tableColumn: NSTableColumn?, byItem item: Any?) -> Any? {
@@ -344,6 +506,7 @@ extension SnippetsEditorWindowController: NSOutlineViewDataSource {
 
     // MARK: - Drag and Drop
     func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
+        guard !isFiltering else { return nil }
         let pasteboardItem = NSPasteboardItem()
         if let folder = item as? EditorSnippetFolder, let index = folders.firstIndex(where: { $0.id == folder.id }) {
             let draggedData = DraggedData(type: .folder, folderID: folder.id, snippetID: nil, index: index)
@@ -361,6 +524,7 @@ extension SnippetsEditorWindowController: NSOutlineViewDataSource {
     }
 
     func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
+        guard !isFiltering else { return NSDragOperation() }
         let pasteboard = info.draggingPasteboard
         guard let data = pasteboard.data(forType: NSPasteboard.PasteboardType(rawValue: Constants.Common.draggedDataType)) else { return NSDragOperation() }
         guard let draggedData = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [DraggedData.self, NSUUID.self], from: data) as? DraggedData else { return NSDragOperation() }
@@ -376,6 +540,7 @@ extension SnippetsEditorWindowController: NSOutlineViewDataSource {
     }
 
     func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        guard !isFiltering else { return false }
         let pasteboard = info.draggingPasteboard
         guard let data = pasteboard.data(forType: NSPasteboard.PasteboardType(rawValue: Constants.Common.draggedDataType)) else { return false }
         guard let draggedData = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [DraggedData.self, NSUUID.self], from: data) as? DraggedData else { return false }
@@ -430,9 +595,16 @@ extension SnippetsEditorWindowController: NSOutlineViewDelegate {
     func outlineView(_ outlineView: NSOutlineView, willDisplayCell cell: Any, for tableColumn: NSTableColumn?, item: Any) {
         guard let cell = cell as? NSTextFieldCell else { return }
         if let folder = item as? EditorSnippetFolder {
-            cell.image = folder.isEnabled ? nil : nil // Add folder icon if desired
+            if let snippetCell = cell as? SnippetsEditorCell {
+                snippetCell.iconType = .folder
+                snippetCell.isItemEnabled = folder.isEnabled
+            }
             cell.textColor = folder.isEnabled ? .labelColor : .secondaryLabelColor
         } else if let snippet = item as? EditorSnippet {
+            if let snippetCell = cell as? SnippetsEditorCell {
+                snippetCell.iconType = .none
+                snippetCell.isItemEnabled = snippet.isEnabled
+            }
             cell.textColor = snippet.isEnabled ? .labelColor : .secondaryLabelColor
         }
     }
@@ -442,6 +614,9 @@ extension SnippetsEditorWindowController: NSOutlineViewDelegate {
     }
 
     func control(_ control: NSControl, textShouldEndEditing fieldEditor: NSText) -> Bool {
+        if control === searchField {
+            return true
+        }
         let text = fieldEditor.string
         guard !text.isEmpty else { return false }
         guard let outlineView = control as? NSOutlineView else { return false }
@@ -456,10 +631,16 @@ extension SnippetsEditorWindowController: NSOutlineViewDelegate {
         changeItemFocus()
         return true
     }
+
+    func controlTextDidChange(_ obj: Notification) {
+        guard let field = obj.object as? NSSearchField, field === searchField else { return }
+        searchQuery = field.stringValue
+        reloadSidebar()
+    }
 }
 
 // MARK: - NSTextView Delegate
-extension SnippetsEditorWindowController: NSTextViewDelegate {
+extension SnippetsEditorWindowController: NSTextViewDelegate, NSSearchFieldDelegate {
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
         guard let replacementString = replacementString else { return false }
         guard let snippet = outlineView.item(atRow: outlineView.selectedRow) as? EditorSnippet else { return false }

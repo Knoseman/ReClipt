@@ -28,6 +28,11 @@ final class SnippetsEditorCell: NSTextFieldCell {
     }
 
     // MARK: - Initialize
+    override init(textCell string: String) {
+        super.init(textCell: string)
+        font = NSFont.systemFont(ofSize: 14)
+    }
+
     required init(coder: NSCoder) {
         super.init(coder: coder)
         font = NSFont.systemFont(ofSize: 14)
@@ -36,6 +41,7 @@ final class SnippetsEditorCell: NSTextFieldCell {
     override func copy(with zone: NSZone?) -> Any {
         guard let cell = super.copy(with: zone) as? SnippetsEditorCell else { return super.copy(with: zone) }
         cell.iconType = iconType
+        cell.isItemEnabled = isItemEnabled
         return cell
     }
 
