@@ -18,6 +18,7 @@ protocol SnippetRepositoryProtocol {
 
     func insertFolder() -> SnippetFolder?
     func insertFolders(_ folders: [(title: String, snippets: [(title: String, content: String)])]) -> [SnippetFolderDetail]?
+    func insertTransferFolders(_ folders: [SnippetTransferFolder]) -> [SnippetFolderDetail]?
     func updateFolderTitle(_ id: SnippetFolder.ID, title: String)
     func updateFolderIsEnabled(_ id: SnippetFolder.ID, isEnabled: Bool)
     func updateFolderIndexes(_ folderIDs: [SnippetFolder.ID])
@@ -121,6 +122,27 @@ final class SnippetRepository: SnippetRepositoryProtocol {
     }
 
     func insertFolders(_ folders: [(title: String, snippets: [(title: String, content: String)])]) -> [SnippetFolderDetail]? {
+        let transferFolders = folders.map { folder in
+            SnippetTransferFolder(
+                id: nil,
+                title: folder.title,
+                index: nil,
+                isEnabled: true,
+                snippets: folder.snippets.map { snippet in
+                    SnippetTransferSnippet(
+                        id: nil,
+                        title: snippet.title,
+                        content: snippet.content,
+                        index: nil,
+                        isEnabled: true
+                    )
+                }
+            )
+        }
+        return insertTransferFolders(transferFolders)
+    }
+
+    func insertTransferFolders(_ folders: [SnippetTransferFolder]) -> [SnippetFolderDetail]? {
         do {
             var result = [SnippetFolderDetail]()
             try store.write { database in
@@ -129,8 +151,8 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                     let folder = SnippetFolder(
                         id: UUID(),
                         title: folderData.title,
-                        index: lastIndex + index + 1,
-                        isEnabled: true
+                        index: lastIndex + (folderData.index ?? index) + 1,
+                        isEnabled: folderData.isEnabled
                     )
                     let folderSQL = """
                         INSERT INTO snippetFolders (id, title, "index", isEnabled)
@@ -152,8 +174,8 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                             folderID: folder.id,
                             title: snippetData.title,
                             content: snippetData.content,
-                            index: snippetIndex,
-                            isEnabled: true
+                            index: snippetData.index ?? snippetIndex,
+                            isEnabled: snippetData.isEnabled
                         )
                         let snippetSQL = """
                             INSERT INTO snippets (id, folderID, title, content, "index", isEnabled)

@@ -100,26 +100,50 @@ final class SnippetsEditorWindowController: NSWindowController {
         leftView.addSubview(scrollView)
 
         // Toolbar buttons
-        let addSnippetButton = NSButton(frame: NSRect(x: 8, y: 8, width: 72, height: 24))
-        addSnippetButton.title = "+ Snippet"
+        let addSnippetButton = NSButton(frame: NSRect(x: 12, y: 8, width: 28, height: 24))
+        addSnippetButton.title = ""
+        addSnippetButton.image = NSImage(systemSymbolName: "doc.badge.plus", accessibilityDescription: String(localized: "Add Snippet"))
         addSnippetButton.bezelStyle = .smallSquare
+        addSnippetButton.toolTip = String(localized: "Add Snippet")
         addSnippetButton.target = self
         addSnippetButton.action = #selector(addSnippetButtonTapped(_:))
         toolbarView.addSubview(addSnippetButton)
 
-        let addFolderButton = NSButton(frame: NSRect(x: 86, y: 8, width: 72, height: 24))
-        addFolderButton.title = "+ Folder"
+        let addFolderButton = NSButton(frame: NSRect(x: 48, y: 8, width: 28, height: 24))
+        addFolderButton.title = ""
+        addFolderButton.image = NSImage(systemSymbolName: "folder.badge.plus", accessibilityDescription: String(localized: "Add Folder"))
         addFolderButton.bezelStyle = .smallSquare
+        addFolderButton.toolTip = String(localized: "Add Folder")
         addFolderButton.target = self
         addFolderButton.action = #selector(addFolderButtonTapped(_:))
         toolbarView.addSubview(addFolderButton)
 
-        let deleteButton = NSButton(frame: NSRect(x: 164, y: 8, width: 28, height: 24))
-        deleteButton.title = "-"
+        let deleteButton = NSButton(frame: NSRect(x: 84, y: 8, width: 28, height: 24))
+        deleteButton.title = ""
+        deleteButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: String(localized: "Delete"))
         deleteButton.bezelStyle = .smallSquare
+        deleteButton.toolTip = String(localized: "Delete")
         deleteButton.target = self
         deleteButton.action = #selector(deleteButtonTapped(_:))
         toolbarView.addSubview(deleteButton)
+
+        let importButton = NSButton(frame: NSRect(x: 124, y: 8, width: 28, height: 24))
+        importButton.title = ""
+        importButton.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: String(localized: "Import Snippets"))
+        importButton.bezelStyle = .smallSquare
+        importButton.toolTip = String(localized: "Import Snippets")
+        importButton.target = self
+        importButton.action = #selector(importSnippetButtonTapped(_:))
+        toolbarView.addSubview(importButton)
+
+        let exportButton = NSButton(frame: NSRect(x: 160, y: 8, width: 28, height: 24))
+        exportButton.title = ""
+        exportButton.image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: String(localized: "Export Snippets"))
+        exportButton.bezelStyle = .smallSquare
+        exportButton.toolTip = String(localized: "Export Snippets")
+        exportButton.target = self
+        exportButton.action = #selector(exportSnippetButtonTapped(_:))
+        toolbarView.addSubview(exportButton)
 
         leftView.addSubview(toolbarView)
 
@@ -218,7 +242,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
-        panel.allowedFileTypes = ["plist"]
+        panel.allowedFileTypes = [Constants.Xml.fileType, "plist"]
         let returnCode = panel.runModal()
 
         if returnCode != NSApplication.ModalResponse.OK { return }
@@ -228,20 +252,8 @@ final class SnippetsEditorWindowController: NSWindowController {
         guard let data = try? Data(contentsOf: url) else { return }
 
         do {
-            guard let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [[String: Any]] else {
-                NSSound.beep()
-                return
-            }
-            let folders = plist.compactMap { dict -> (title: String, snippets: [(title: String, content: String)])? in
-                guard let title = dict["title"] as? String,
-                      let snippets = dict["snippets"] as? [[String: String]] else { return nil }
-                let snippetData = snippets.compactMap { snippetDict -> (title: String, content: String)? in
-                    guard let sTitle = snippetDict["title"], let sContent = snippetDict["content"] else { return nil }
-                    return (title: sTitle, content: sContent)
-                }
-                return (title: title, snippets: snippetData)
-            }
-            guard let folderDetails = snippetRepository.insertFolders(folders) else {
+            let transferFolders = try SnippetTransfer.importFolders(from: data, fileExtension: url.pathExtension)
+            guard let folderDetails = snippetRepository.insertTransferFolders(transferFolders) else {
                 NSSound.beep()
                 return
             }
@@ -253,22 +265,13 @@ final class SnippetsEditorWindowController: NSWindowController {
     }
 
     @IBAction private func exportSnippetButtonTapped(_ sender: AnyObject) {
-        let plist: [[String: Any]] = folders.map { folder in
-            [
-                "title": folder.title,
-                "snippets": folder.snippets.map { [
-                    "title": $0.title,
-                    "content": $0.content
-                ] }
-            ]
-        }
-
         do {
-            let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+            let transferFolders = folders.map(SnippetTransferFolder.init)
+            let data = try SnippetTransfer.exportXML(folders: transferFolders)
             let panel = NSSavePanel()
-            panel.allowedFileTypes = ["plist"]
+            panel.allowedFileTypes = [Constants.Xml.fileType]
             panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
-            panel.nameFieldStringValue = "snippets"
+            panel.nameFieldStringValue = "snippets.xml"
             let returnCode = panel.runModal()
 
             if returnCode != NSApplication.ModalResponse.OK { return }
@@ -513,5 +516,29 @@ private final class EditorSnippet: NSObject {
         self.index = snippet.index
         self.isEnabled = snippet.isEnabled
         super.init()
+    }
+}
+
+private extension SnippetTransferFolder {
+    init(editorFolder: EditorSnippetFolder) {
+        self.init(
+            id: editorFolder.id,
+            title: editorFolder.title,
+            index: editorFolder.index,
+            isEnabled: editorFolder.isEnabled,
+            snippets: editorFolder.snippets.map(SnippetTransferSnippet.init)
+        )
+    }
+}
+
+private extension SnippetTransferSnippet {
+    init(editorSnippet: EditorSnippet) {
+        self.init(
+            id: editorSnippet.id,
+            title: editorSnippet.title,
+            content: editorSnippet.content,
+            index: editorSnippet.index,
+            isEnabled: editorSnippet.isEnabled
+        )
     }
 }
