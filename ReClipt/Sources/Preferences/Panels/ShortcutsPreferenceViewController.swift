@@ -28,15 +28,16 @@ class ShortcutsPreferenceViewController: NSViewController {
 
     // MARK: - Initialize
     override func loadView() {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
+        let view = ShortcutsPreferencePaneView(frame: NSRect(x: 0, y: 0, width: 520, height: 330))
         self.view = view
 
-        let label = NSTextField(labelWithString: String(localized: "Keyboard Shortcuts"))
-        label.font = NSFont.boldSystemFont(ofSize: 16)
-        label.frame = NSRect(x: 20, y: 300, width: 250, height: 24)
+        let label = NSTextField(labelWithString: String(localized: "Menu"))
+        label.font = NSFont.boldSystemFont(ofSize: 13)
+        label.textColor = .secondaryLabelColor
+        label.frame = NSRect(x: 64, y: 24, width: 250, height: 18)
         view.addSubview(label)
 
-        var yOffset: CGFloat = 260
+        var yOffset: CGFloat = 64
         mainShortcutRecordView = addShortcutRow(
             title: String(localized: "Main Menu:"),
             keyCombo: AppEnvironment.current.hotKeyService.mainKeyCombo,
@@ -44,7 +45,7 @@ class ShortcutsPreferenceViewController: NSViewController {
             yOffset: yOffset,
             to: view
         )
-        yOffset -= 50
+        yOffset += 48
 
         historyShortcutRecordView = addShortcutRow(
             title: String(localized: "History Menu:"),
@@ -53,7 +54,7 @@ class ShortcutsPreferenceViewController: NSViewController {
             yOffset: yOffset,
             to: view
         )
-        yOffset -= 50
+        yOffset += 48
 
         snippetShortcutRecordView = addShortcutRow(
             title: String(localized: "Snippet Menu:"),
@@ -62,7 +63,14 @@ class ShortcutsPreferenceViewController: NSViewController {
             yOffset: yOffset,
             to: view
         )
-        yOffset -= 50
+        yOffset += 58
+
+        let historyLabel = NSTextField(labelWithString: String(localized: "History"))
+        historyLabel.font = NSFont.boldSystemFont(ofSize: 13)
+        historyLabel.textColor = .secondaryLabelColor
+        historyLabel.frame = NSRect(x: 64, y: yOffset, width: 250, height: 18)
+        view.addSubview(historyLabel)
+        yOffset += 40
 
         clearHistoryShortcutRecordView = addShortcutRow(
             title: String(localized: "Clear History:"),
@@ -81,10 +89,10 @@ class ShortcutsPreferenceViewController: NSViewController {
         to view: NSView
     ) -> HotKeyRecorderView {
         let titleLabel = NSTextField(labelWithString: title)
-        titleLabel.frame = NSRect(x: 20, y: yOffset, width: 150, height: 24)
+        titleLabel.frame = NSRect(x: 64, y: yOffset + 4, width: 130, height: 24)
         view.addSubview(titleLabel)
 
-        let recorder = HotKeyRecorderView(frame: NSRect(x: 180, y: yOffset, width: 200, height: 30))
+        let recorder = HotKeyRecorderView(frame: NSRect(x: 200, y: yOffset, width: 240, height: 30))
         recorder.keyCombo = keyCombo
         recorder.delegate = self
         shortcutTargets[ObjectIdentifier(recorder)] = target
@@ -108,4 +116,8 @@ extension ShortcutsPreferenceViewController: HotKeyRecorderViewDelegate {
             AppEnvironment.current.hotKeyService.changeClearHistoryKeyCombo(keyCombo)
         }
     }
+}
+
+private final class ShortcutsPreferencePaneView: NSView {
+    override var isFlipped: Bool { true }
 }

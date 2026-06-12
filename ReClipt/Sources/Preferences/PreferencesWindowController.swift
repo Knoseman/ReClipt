@@ -15,7 +15,7 @@ final class PreferencesWindowController: NSWindowController {
     // MARK: - Properties
     static let sharedController: PreferencesWindowController = {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -25,16 +25,25 @@ final class PreferencesWindowController: NSWindowController {
         return PreferencesWindowController(window: window)
     }()
 
-    private let viewControllers: [NSViewController] = [
-        GeneralPreferenceViewController(),
-        MenuPreferenceViewController(),
-        TypePreferenceViewController(),
-        ExcludeAppPreferenceViewController(),
-        ShortcutsPreferenceViewController()
+    private struct Pane {
+        let title: String
+        let systemImageName: String
+        let viewController: NSViewController
+    }
+
+    private let toolbarHeight: CGFloat = 64
+    private let panes: [Pane] = [
+        Pane(title: String(localized: "General"), systemImageName: "switch.2", viewController: GeneralPreferenceViewController()),
+        Pane(title: String(localized: "Menu"), systemImageName: "list.bullet", viewController: MenuPreferenceViewController()),
+        Pane(title: String(localized: "Type"), systemImageName: "doc.text", viewController: TypePreferenceViewController()),
+        Pane(title: String(localized: "Exclude"), systemImageName: "nosign", viewController: ExcludeAppPreferenceViewController()),
+        Pane(title: String(localized: "Shortcuts"), systemImageName: "keyboard", viewController: ShortcutsPreferenceViewController())
     ]
 
-    private var toolbarButtons = [NSButton]()
+    private var toolbarView: NSView?
+    private var toolbarButtons = [PreferenceTabButton]()
     private var currentViewController: NSViewController?
+    private var selectedIndex = 0
     private var hasConfiguredWindow = false
 
     // MARK: - Window Life Cycle
@@ -59,70 +68,84 @@ final class PreferencesWindowController: NSWindowController {
         window.delegate = self
         window.setFrameAutosaveName("PreferencesWindow")
         setupToolbar()
-        selectedTab(0)
         switchView(0)
     }
 
     private func setupToolbar() {
         guard let contentView = window?.contentView else { return }
 
-        let toolbar = NSView(frame: NSRect(x: 0, y: contentView.frame.height - 50, width: contentView.frame.width, height: 50))
+        let toolbar = NSView(frame: NSRect(x: 0, y: 0, width: contentView.frame.width, height: toolbarHeight))
         toolbar.autoresizingMask = [.width, .minYMargin]
 
-        let titles = [
-            String(localized: "General"),
-            String(localized: "Menu"),
-            String(localized: "Type"),
-            String(localized: "Exclude"),
-            String(localized: "Shortcuts")
-        ]
-
-        let buttonWidth = toolbar.frame.width / CGFloat(titles.count)
-        for (index, title) in titles.enumerated() {
-            let button = NSButton(frame: NSRect(x: CGFloat(index) * buttonWidth, y: 10, width: buttonWidth, height: 30))
-            button.title = title
-            button.bezelStyle = .texturedRounded
+        for (index, pane) in panes.enumerated() {
+            let button = PreferenceTabButton(
+                title: pane.title,
+                image: NSImage(systemSymbolName: pane.systemImageName, accessibilityDescription: pane.title)
+            )
             button.target = self
-            button.action = #selector(toolBarItemTapped(_:))
+            button.action = #selector(toolbarButtonTapped(_:))
             button.tag = index
             toolbar.addSubview(button)
             toolbarButtons.append(button)
         }
 
         contentView.addSubview(toolbar)
+        toolbarView = toolbar
     }
 
-    @objc private func toolBarItemTapped(_ sender: NSButton) {
-        selectedTab(sender.tag)
+    private func layoutToolbar(width: CGFloat, contentHeight: CGFloat) {
+        guard let toolbarView else { return }
+
+        toolbarView.frame = NSRect(x: 0, y: contentHeight, width: width, height: toolbarHeight)
+
+        let buttonWidth: CGFloat = 72
+        let buttonHeight: CGFloat = 48
+        let gap: CGFloat = 12
+        let totalWidth = CGFloat(toolbarButtons.count) * buttonWidth + CGFloat(toolbarButtons.count - 1) * gap
+        var x = max(12, (width - totalWidth) / 2)
+
+        for button in toolbarButtons {
+            button.frame = NSRect(x: x, y: 8, width: buttonWidth, height: buttonHeight)
+            x += buttonWidth + gap
+        }
+    }
+
+    @objc private func toolbarButtonTapped(_ sender: NSButton) {
         switchView(sender.tag)
     }
 
     private func selectedTab(_ index: Int) {
         toolbarButtons.enumerated().forEach { i, button in
-            button.highlight(i == index)
+            button.isSelected = i == index
         }
     }
 
     private func switchView(_ index: Int) {
-        guard let contentView = window?.contentView else { return }
+        guard panes.indices.contains(index), let window, let contentView = window.contentView else { return }
 
-        // Remove current view
+        selectedIndex = index
+        selectedTab(index)
         currentViewController?.view.removeFromSuperview()
 
-        let newViewController = viewControllers[index]
+        let newViewController = panes[index].viewController
         let newView = newViewController.view
-        newView.frame = NSRect(x: 0, y: 0, width: contentView.frame.width, height: contentView.frame.height - 50)
+        let paneWidth = max(CGFloat(640), newView.frame.width)
+        let paneHeight = newView.frame.height
+        let contentSize = NSSize(width: paneWidth, height: paneHeight + toolbarHeight)
+
+        let oldFrame = window.frame
+        var newFrame = window.frameRect(forContentRect: NSRect(origin: oldFrame.origin, size: contentSize))
+        newFrame.origin.x = oldFrame.origin.x
+        newFrame.origin.y = oldFrame.origin.y + oldFrame.height - newFrame.height
+        window.setFrame(newFrame, display: true, animate: true)
+
+        contentView.frame = NSRect(origin: .zero, size: contentSize)
+        newView.frame = NSRect(x: 0, y: 0, width: paneWidth, height: paneHeight)
         newView.autoresizingMask = [.width, .height]
         contentView.addSubview(newView)
         currentViewController = newViewController
 
-        // Resize window to fit content
-        let frame = window!.frame
-        var newFrame = window!.frameRect(forContentRect: newView.frame)
-        newFrame.origin = frame.origin
-        newFrame.origin.y += frame.height - newFrame.height - 50
-        newFrame.size.height += 50
-        window?.setFrame(newFrame, display: true)
+        layoutToolbar(width: paneWidth, contentHeight: paneHeight)
     }
 }
 
@@ -136,231 +159,291 @@ extension PreferencesWindowController: NSWindowDelegate {
     }
 }
 
-// MARK: - Preference View Controllers (Programmatic)
+// MARK: - Preference View Controllers
 
 private final class FlippedPreferenceView: NSView {
     override var isFlipped: Bool { true }
 }
 
+private final class PreferenceTabButton: NSButton {
+    private let iconView = NSImageView(frame: .zero)
+    private let titleLabel = NSTextField(labelWithString: "")
+
+    var isSelected = false {
+        didSet { updateAppearance() }
+    }
+
+    init(title: String, image: NSImage?) {
+        super.init(frame: .zero)
+        self.title = ""
+        self.isBordered = false
+        self.focusRingType = .none
+        self.wantsLayer = true
+
+        iconView.image = image
+        iconView.image?.isTemplate = true
+        iconView.imageScaling = .scaleProportionallyDown
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(iconView)
+
+        titleLabel.stringValue = title
+        titleLabel.alignment = .center
+        titleLabel.font = NSFont.systemFont(ofSize: 11)
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            iconView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            iconView.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            iconView.widthAnchor.constraint(equalToConstant: 16),
+            iconView.heightAnchor.constraint(equalToConstant: 16),
+
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            titleLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 3),
+            titleLabel.heightAnchor.constraint(equalToConstant: 15)
+        ])
+
+        updateAppearance()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func updateLayer() {
+        super.updateLayer()
+        updateAppearance()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearance()
+    }
+
+    private func updateAppearance() {
+        let textColor = isSelected ? NSColor.controlAccentColor : NSColor.secondaryLabelColor
+        let iconColor = isSelected ? NSColor.controlAccentColor : NSColor.labelColor
+
+        titleLabel.textColor = textColor
+        iconView.contentTintColor = iconColor
+
+        layer?.cornerRadius = 6
+        layer?.borderWidth = isSelected ? 1 : 0
+        layer?.borderColor = isSelected ? NSColor.controlAccentColor.withAlphaComponent(0.45).cgColor : nil
+        layer?.backgroundColor = isSelected
+            ? NSColor.controlAccentColor.withAlphaComponent(0.16).cgColor
+            : NSColor.clear.cgColor
+    }
+}
+
 final class GeneralPreferenceViewController: NSViewController {
     override func loadView() {
-        self.view = makeScrollablePreferenceView(title: String(localized: "General Settings")) { stackView in
-            stackView.addArrangedSubview(makeCheckboxRow(
-                title: String(localized: "Paste after selecting a clip"),
-                key: Constants.UserDefaults.inputPasteCommand,
-                in: stackView
-            ))
-            stackView.addArrangedSubview(makeCheckboxRow(
-                title: String(localized: "Move pasted clips to the top"),
-                key: Constants.UserDefaults.reorderClipsAfterPasting,
-                in: stackView
-            ))
-            stackView.addArrangedSubview(makeCheckboxRow(
-                title: String(localized: "Overwrite duplicate clipboard entries"),
-                key: Constants.UserDefaults.overwriteSameHistory,
-                in: stackView
-            ))
-            stackView.addArrangedSubview(makeCheckboxRow(
-                title: String(localized: "Store duplicate clipboard entries"),
-                key: Constants.UserDefaults.copySameHistory,
-                in: stackView
-            ))
-        }
+        let view = makePreferencePane(height: 300)
+        var y: CGFloat = 24
+
+        addSectionLabel(String(localized: "Behavior"), y: &y, to: view)
+        addCheckbox(String(localized: "Paste after selecting a clip"), key: Constants.UserDefaults.inputPasteCommand, y: &y, to: view)
+        addCheckbox(String(localized: "Move pasted clips to the top"), key: Constants.UserDefaults.reorderClipsAfterPasting, y: &y, to: view)
+        addCheckbox(String(localized: "Overwrite duplicate clipboard entries"), key: Constants.UserDefaults.overwriteSameHistory, y: &y, to: view)
+        addCheckbox(String(localized: "Store duplicate clipboard entries"), key: Constants.UserDefaults.copySameHistory, y: &y, to: view)
+
+        y += 10
+        addSectionLabel(String(localized: "Clipboard History"), y: &y, to: view)
+        addNumberRow(
+            String(localized: "Maximum clipboard history size:"),
+            key: Constants.UserDefaults.maxHistorySize,
+            range: 1...10000,
+            unit: String(localized: "items"),
+            y: &y,
+            to: view
+        )
+
+        y += 10
+        addSectionLabel(String(localized: "Appearance"), y: &y, to: view)
+        addPopupRow(
+            String(localized: "Menu bar icon style:"),
+            key: Constants.UserDefaults.showStatusItem,
+            options: [
+                (String(localized: "Hidden"), 0),
+                (String(localized: "Clipboard icon"), 1),
+                (String(localized: "Legacy icon"), 2)
+            ],
+            y: &y,
+            to: view
+        )
+
+        self.view = view
     }
 }
 
 final class MenuPreferenceViewController: NSViewController {
     override func loadView() {
-        let rootView = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
-        let scrollView = NSScrollView(frame: rootView.bounds)
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = false
-        scrollView.borderType = .noBorder
+        let view = makePreferencePane(height: 350)
+        var leftY: CGFloat = 24
+        var rightY: CGFloat = 24
 
-        let contentWidth: CGFloat = 500
-        let contentHeight: CGFloat = 680
-        let contentView = FlippedPreferenceView(frame: NSRect(x: 0, y: 0, width: contentWidth, height: contentHeight))
+        addSectionLabel(String(localized: "Layout"), y: &leftY, to: view, x: 48, width: 260)
+        addNumberRow(String(localized: "Inline history items:"), key: Constants.UserDefaults.numberOfItemsPlaceInline, range: 0...100, unit: String(localized: "items"), y: &leftY, to: view, x: 48, fieldX: 236, labelWidth: 170)
+        addNumberRow(String(localized: "Items per history folder:"), key: Constants.UserDefaults.numberOfItemsPlaceInsideFolder, range: 0...100, unit: String(localized: "items"), y: &leftY, to: view, x: 48, fieldX: 236, labelWidth: 170)
+        addNumberRow(String(localized: "Menu title length:"), key: Constants.UserDefaults.maxMenuItemTitleLength, range: 3...1000, unit: String(localized: "chars"), y: &leftY, to: view, x: 48, fieldX: 236, labelWidth: 170)
 
-        let titleLabel = NSTextField(labelWithString: String(localized: "Menu Settings"))
-        titleLabel.font = NSFont.boldSystemFont(ofSize: 16)
-        titleLabel.frame = NSRect(x: 20, y: 20, width: 250, height: 24)
-        contentView.addSubview(titleLabel)
+        leftY += 10
+        addSectionLabel(String(localized: "Numbering & Shortcuts"), y: &leftY, to: view, x: 48, width: 260)
+        addCheckbox(String(localized: "Show numbers before menu items"), key: Constants.UserDefaults.menuItemsAreMarkedWithNumbers, y: &leftY, to: view, x: 48, width: 260)
+        addCheckbox(String(localized: "Start visible numbering at zero"), key: Constants.UserDefaults.menuItemsTitleStartWithZero, y: &leftY, to: view, x: 48, width: 260)
+        addCheckbox(String(localized: "Enable number-key shortcuts"), key: Constants.UserDefaults.addNumericKeyEquivalents, y: &leftY, to: view, x: 48, width: 260)
 
-        var currentY: CGFloat = 58
+        leftY += 10
+        addSectionLabel(String(localized: "Commands"), y: &leftY, to: view, x: 48, width: 260)
+        addCheckbox(String(localized: "Add Clear History item"), key: Constants.UserDefaults.addClearHistoryMenuItem, y: &leftY, to: view, x: 48, width: 260)
+        addCheckbox(String(localized: "Ask before clearing history"), key: Constants.UserDefaults.showAlertBeforeClearHistory, y: &leftY, to: view, x: 48, width: 260)
 
-        let statusLabel = NSTextField(labelWithString: String(localized: "Menu bar icon style"))
-        statusLabel.frame = NSRect(x: 20, y: currentY + 4, width: 200, height: 22)
-        contentView.addSubview(statusLabel)
+        addSectionLabel(String(localized: "Previews"), y: &rightY, to: view, x: 348, width: 240)
+        addCheckbox(String(localized: "Show menu item icons"), key: Constants.UserDefaults.showIconInTheMenu, y: &rightY, to: view, x: 348, width: 240)
+        addCheckbox(String(localized: "Show item thumbnails"), key: Constants.UserDefaults.showImageInTheMenu, y: &rightY, to: view, x: 348, width: 240)
+        addCheckbox(String(localized: "Show color previews"), key: Constants.UserDefaults.showColorPreviewInTheMenu, y: &rightY, to: view, x: 348, width: 240)
+        addNumberRow(String(localized: "Thumbnail width:"), key: Constants.UserDefaults.thumbnailWidth, range: 1...2000, unit: String(localized: "px"), y: &rightY, to: view, x: 348, fieldX: 486, labelWidth: 130)
+        addNumberRow(String(localized: "Thumbnail height:"), key: Constants.UserDefaults.thumbnailHeight, range: 1...2000, unit: String(localized: "px"), y: &rightY, to: view, x: 348, fieldX: 486, labelWidth: 130)
 
-        let statusPopup = NSPopUpButton(frame: NSRect(x: 260, y: currentY, width: 200, height: 26), pullsDown: false)
-        statusPopup.addItem(withTitle: String(localized: "Hidden"))
-        statusPopup.lastItem?.tag = 0
-        statusPopup.addItem(withTitle: String(localized: "Clipboard icon"))
-        statusPopup.lastItem?.tag = 1
-        statusPopup.addItem(withTitle: String(localized: "Legacy icon"))
-        statusPopup.lastItem?.tag = 2
-        statusPopup.identifier = NSUserInterfaceItemIdentifier(rawValue: Constants.UserDefaults.showStatusItem)
-        statusPopup.target = self
-        statusPopup.action = #selector(handlePopupSelection(_:))
-        statusPopup.selectItem(withTag: UserDefaults.standard.integer(forKey: Constants.UserDefaults.showStatusItem))
-        if statusPopup.selectedItem == nil {
-            statusPopup.selectItem(withTag: 1)
-        }
-        contentView.addSubview(statusPopup)
+        rightY += 10
+        addSectionLabel(String(localized: "Tooltips"), y: &rightY, to: view, x: 348, width: 240)
+        addCheckbox(String(localized: "Show tooltips"), key: Constants.UserDefaults.showToolTipOnMenuItem, y: &rightY, to: view, x: 348, width: 240)
+        addNumberRow(String(localized: "Tooltip text length:"), key: Constants.UserDefaults.maxLengthOfToolTip, range: 1...10000, unit: String(localized: "chars"), y: &rightY, to: view, x: 348, fieldX: 486, labelWidth: 130)
 
-        currentY += 40
-
-        let checkboxes: [(String, String, Bool)] = [
-            (String(localized: "Show menu item icons"), Constants.UserDefaults.showIconInTheMenu, false),
-            (String(localized: "Add Clear History item"), Constants.UserDefaults.addClearHistoryMenuItem, false),
-            (String(localized: "Ask before clearing history"), Constants.UserDefaults.showAlertBeforeClearHistory, false),
-            (String(localized: "Show item thumbnails"), Constants.UserDefaults.showImageInTheMenu, false),
-            (String(localized: "Show color previews"), Constants.UserDefaults.showColorPreviewInTheMenu, false),
-            (String(localized: "Show numbers before menu items"), Constants.UserDefaults.menuItemsAreMarkedWithNumbers, false),
-            (String(localized: "Start visible numbering at zero"), Constants.UserDefaults.menuItemsTitleStartWithZero, false),
-            (String(localized: "Enable number-key shortcuts"), Constants.UserDefaults.addNumericKeyEquivalents, false),
-            (String(localized: "Show tooltips"), Constants.UserDefaults.showToolTipOnMenuItem, false)
-        ]
-
-        for (title, key, truthyNonBool) in checkboxes {
-            let checkbox = NSButton(checkboxWithTitle: title, target: self, action: #selector(handleCheckboxToggle(_:)))
-            checkbox.identifier = NSUserInterfaceItemIdentifier(rawValue: key + (truthyNonBool ? "::truthy" : ""))
-            checkbox.state = checkboxState(forKey: key, truthyNonBool: truthyNonBool)
-            checkbox.frame = NSRect(x: 20, y: currentY, width: 420, height: 22)
-            contentView.addSubview(checkbox)
-            currentY += 30
-        }
-
-        currentY += 8
-
-        let numericRows: [(String, String, ClosedRange<Int>)] = [
-            (String(localized: "Maximum clipboard history size"), Constants.UserDefaults.maxHistorySize, 1...10000),
-            (String(localized: "Inline history items"), Constants.UserDefaults.numberOfItemsPlaceInline, 0...100),
-            (String(localized: "Items per history folder"), Constants.UserDefaults.numberOfItemsPlaceInsideFolder, 0...100),
-            (String(localized: "Menu title length"), Constants.UserDefaults.maxMenuItemTitleLength, 3...1000),
-            (String(localized: "Tooltip text length"), Constants.UserDefaults.maxLengthOfToolTip, 1...10000),
-            (String(localized: "Thumbnail width"), Constants.UserDefaults.thumbnailWidth, 1...2000),
-            (String(localized: "Thumbnail height"), Constants.UserDefaults.thumbnailHeight, 1...2000)
-        ]
-
-        for (title, key, range) in numericRows {
-            let label = NSTextField(labelWithString: title)
-            label.frame = NSRect(x: 20, y: currentY + 4, width: 280, height: 22)
-            contentView.addSubview(label)
-
-            let field = NSTextField(frame: NSRect(x: 360, y: currentY, width: 100, height: 26))
-            field.alignment = .right
-            field.identifier = NSUserInterfaceItemIdentifier(rawValue: key)
-            field.target = self
-            field.action = #selector(handleNumberFieldChange(_:))
-            field.cell?.sendsActionOnEndEditing = true
-            field.integerValue = UserDefaults.standard.integer(forKey: key)
-            let formatter = NumberFormatter()
-            formatter.minimum = NSNumber(value: range.lowerBound)
-            formatter.maximum = NSNumber(value: range.upperBound)
-            formatter.allowsFloats = false
-            formatter.numberStyle = .none
-            field.formatter = formatter
-            contentView.addSubview(field)
-
-            currentY += 34
-        }
-
-        scrollView.documentView = contentView
-        contentView.scroll(NSPoint(x: 0, y: 0))
-        rootView.addSubview(scrollView)
-        self.view = rootView
+        self.view = view
     }
 }
 
 private extension NSViewController {
-    func makeScrollablePreferenceView(
-        title: String,
-        build: (NSStackView) -> Void
-    ) -> NSView {
-        let rootView = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
+    var labelX: CGFloat { 64 }
+    var fieldX: CGFloat { 322 }
+    var paneWidth: CGFloat { 640 }
 
-        let scrollView = NSScrollView(frame: rootView.bounds)
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = false
-        scrollView.borderType = .noBorder
-
-        let documentView = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
-        scrollView.documentView = documentView
-
-        let stackView = NSStackView()
-        stackView.orientation = .vertical
-        stackView.alignment = .leading
-        stackView.spacing = 14
-        stackView.edgeInsets = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        documentView.addSubview(stackView)
-
-        let titleLabel = NSTextField(labelWithString: title)
-        titleLabel.font = NSFont.boldSystemFont(ofSize: 16)
-        stackView.addArrangedSubview(titleLabel)
-
-        build(stackView)
-
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: documentView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
-            stackView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor)
-        ])
-
-        rootView.addSubview(scrollView)
-        return rootView
+    func makePreferencePane(width: CGFloat? = nil, height: CGFloat) -> FlippedPreferenceView {
+        let view = FlippedPreferenceView(frame: NSRect(x: 0, y: 0, width: width ?? paneWidth, height: height))
+        view.autoresizingMask = [.width, .height]
+        return view
     }
 
-    func makeCheckboxRow(
-        title: String,
-        key: String,
-        in stackView: NSStackView,
-        truthyNonBool: Bool = false
-    ) -> NSView {
-        let button = NSButton(checkboxWithTitle: title, target: nil, action: nil)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.state = checkboxState(forKey: key, truthyNonBool: truthyNonBool)
-        button.action = #selector(handleCheckboxToggle(_:))
-        button.target = self
-        button.identifier = NSUserInterfaceItemIdentifier(rawValue: key + (truthyNonBool ? "::truthy" : ""))
-
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 460, height: 24))
-        container.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(button)
-        NSLayoutConstraint.activate([
-            container.widthAnchor.constraint(equalToConstant: 460),
-            button.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            button.topAnchor.constraint(equalTo: container.topAnchor),
-            button.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-        ])
-        return container
+    func addSectionLabel(_ title: String, y: inout CGFloat, to view: NSView, x: CGFloat? = nil, width: CGFloat = 360) {
+        let label = NSTextField(labelWithString: title)
+        label.font = NSFont.boldSystemFont(ofSize: 13)
+        label.textColor = .secondaryLabelColor
+        label.frame = NSRect(x: x ?? labelX, y: y, width: width, height: 18)
+        view.addSubview(label)
+        y += 27
     }
 
-    func makeNumberRow(
-        title: String,
+    func addCheckbox(_ title: String, key: String, y: inout CGFloat, to view: NSView, truthyNonBool: Bool = false, x: CGFloat? = nil, width: CGFloat = 390) {
+        let checkbox = NSButton(checkboxWithTitle: title, target: self, action: #selector(handleCheckboxToggle(_:)))
+        checkbox.identifier = NSUserInterfaceItemIdentifier(rawValue: key + (truthyNonBool ? "::truthy" : ""))
+        checkbox.state = checkboxState(forKey: key, truthyNonBool: truthyNonBool)
+        checkbox.frame = NSRect(x: x ?? labelX, y: y, width: width, height: 22)
+        view.addSubview(checkbox)
+        y += 26
+    }
+
+    func addNumberRow(
+        _ title: String,
         key: String,
         range: ClosedRange<Int>,
-        in stackView: NSStackView
-    ) -> NSView {
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 460, height: 28))
-        container.translatesAutoresizingMaskIntoConstraints = false
-
+        unit: String,
+        y: inout CGFloat,
+        to view: NSView,
+        x: CGFloat? = nil,
+        fieldX: CGFloat? = nil,
+        labelWidth: CGFloat = 240
+    ) {
         let label = NSTextField(labelWithString: title)
-        label.translatesAutoresizingMaskIntoConstraints = false
+        label.frame = NSRect(x: x ?? labelX, y: y + 3, width: labelWidth, height: 20)
+        view.addSubview(label)
 
+        let field = makeNumberField(key: key, range: range)
+        field.frame = NSRect(x: fieldX ?? self.fieldX, y: y, width: 64, height: 24)
+        view.addSubview(field)
+
+        let unitLabel = NSTextField(labelWithString: unit)
+        unitLabel.textColor = .secondaryLabelColor
+        unitLabel.frame = NSRect(x: field.frame.maxX + 8, y: y + 3, width: 80, height: 20)
+        view.addSubview(unitLabel)
+
+        y += 30
+    }
+
+    func addNumberPairRow(
+        _ title: String,
+        firstKey: String,
+        firstUnit: String,
+        secondKey: String,
+        secondUnit: String,
+        range: ClosedRange<Int>,
+        y: inout CGFloat,
+        to view: NSView,
+        x: CGFloat? = nil,
+        fieldX: CGFloat? = nil,
+        labelWidth: CGFloat = 240
+    ) {
+        let label = NSTextField(labelWithString: title)
+        label.frame = NSRect(x: x ?? labelX, y: y + 3, width: labelWidth, height: 20)
+        view.addSubview(label)
+
+        let firstField = makeNumberField(key: firstKey, range: range)
+        firstField.frame = NSRect(x: fieldX ?? self.fieldX, y: y, width: 56, height: 24)
+        view.addSubview(firstField)
+
+        let firstUnitLabel = NSTextField(labelWithString: firstUnit)
+        firstUnitLabel.textColor = .secondaryLabelColor
+        firstUnitLabel.frame = NSRect(x: firstField.frame.maxX + 6, y: y + 3, width: 20, height: 20)
+        view.addSubview(firstUnitLabel)
+
+        let secondField = makeNumberField(key: secondKey, range: range)
+        secondField.frame = NSRect(x: firstUnitLabel.frame.maxX + 16, y: y, width: 56, height: 24)
+        view.addSubview(secondField)
+
+        let secondUnitLabel = NSTextField(labelWithString: secondUnit)
+        secondUnitLabel.textColor = .secondaryLabelColor
+        secondUnitLabel.frame = NSRect(x: secondField.frame.maxX + 6, y: y + 3, width: 20, height: 20)
+        view.addSubview(secondUnitLabel)
+
+        y += 30
+    }
+
+    func addPopupRow(
+        _ title: String,
+        key: String,
+        options: [(title: String, tag: Int)],
+        y: inout CGFloat,
+        to view: NSView
+    ) {
+        let label = NSTextField(labelWithString: title)
+        label.frame = NSRect(x: labelX, y: y + 4, width: 240, height: 20)
+        view.addSubview(label)
+
+        let popup = NSPopUpButton(frame: NSRect(x: fieldX, y: y, width: 150, height: 26), pullsDown: false)
+        options.forEach { option in
+            popup.addItem(withTitle: option.title)
+            popup.lastItem?.tag = option.tag
+        }
+        popup.identifier = NSUserInterfaceItemIdentifier(rawValue: key)
+        popup.target = self
+        popup.action = #selector(handlePopupSelection(_:))
+        popup.selectItem(withTag: AppEnvironment.current.defaults.integer(forKey: key))
+        view.addSubview(popup)
+
+        y += 32
+    }
+
+    func makeNumberField(key: String, range: ClosedRange<Int>) -> NSTextField {
         let field = NSTextField()
-        field.translatesAutoresizingMaskIntoConstraints = false
         field.alignment = .right
         field.identifier = NSUserInterfaceItemIdentifier(rawValue: key)
         field.target = self
         field.action = #selector(handleNumberFieldChange(_:))
         field.cell?.sendsActionOnEndEditing = true
-        field.integerValue = UserDefaults.standard.integer(forKey: key)
+        field.integerValue = AppEnvironment.current.defaults.integer(forKey: key)
+
         let formatter = NumberFormatter()
         formatter.minimum = NSNumber(value: range.lowerBound)
         formatter.maximum = NSNumber(value: range.upperBound)
@@ -368,18 +451,7 @@ private extension NSViewController {
         formatter.numberStyle = .none
         field.formatter = formatter
 
-        container.addSubview(label)
-        container.addSubview(field)
-        NSLayoutConstraint.activate([
-            container.widthAnchor.constraint(equalToConstant: 460),
-            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            field.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            field.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            field.widthAnchor.constraint(equalToConstant: 80),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: field.leadingAnchor, constant: -12)
-        ])
-        return container
+        return field
     }
 
     @objc func handleCheckboxToggle(_ sender: NSButton) {

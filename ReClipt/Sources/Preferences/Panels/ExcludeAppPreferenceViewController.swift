@@ -15,36 +15,44 @@ class ExcludeAppPreferenceViewController: NSViewController {
     private var tableView: NSTableView!
 
     override func loadView() {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 500, height: 350))
+        let view = ExcludePreferencePaneView(frame: NSRect(x: 0, y: 0, width: 520, height: 350))
         self.view = view
 
         let label = NSTextField(labelWithString: String(localized: "Excluded Applications"))
-        label.font = NSFont.boldSystemFont(ofSize: 16)
-        label.frame = NSRect(x: 20, y: 300, width: 250, height: 24)
+        label.font = NSFont.boldSystemFont(ofSize: 13)
+        label.textColor = .secondaryLabelColor
+        label.frame = NSRect(x: 64, y: 24, width: 250, height: 18)
         view.addSubview(label)
 
-        let scrollView = NSScrollView(frame: NSRect(x: 20, y: 60, width: 460, height: 230))
+        let helpLabel = NSTextField(labelWithString: String(localized: "Clipboard changes from these apps will not be stored."))
+        helpLabel.textColor = .secondaryLabelColor
+        helpLabel.frame = NSRect(x: 64, y: 50, width: 390, height: 20)
+        view.addSubview(helpLabel)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 64, y: 86, width: 392, height: 200))
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         scrollView.borderType = .bezelBorder
 
         tableView = NSTableView()
-        tableView.addTableColumn(NSTableColumn(identifier: NSUserInterfaceItemIdentifier("appName")))
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("appName"))
+        column.width = 392
+        tableView.addTableColumn(column)
         tableView.headerView = nil
         tableView.dataSource = self
         scrollView.documentView = tableView
         view.addSubview(scrollView)
 
-        let addButton = NSButton(frame: NSRect(x: 20, y: 20, width: 80, height: 28))
-        addButton.title = String(localized: "Add")
-        addButton.bezelStyle = .rounded
+        let addButton = NSButton(frame: NSRect(x: 64, y: 296, width: 28, height: 24))
+        addButton.title = "+"
+        addButton.bezelStyle = .smallSquare
         addButton.target = self
         addButton.action = #selector(addAppButtonTapped(_:))
         view.addSubview(addButton)
 
-        let deleteButton = NSButton(frame: NSRect(x: 110, y: 20, width: 80, height: 28))
-        deleteButton.title = String(localized: "Delete")
-        deleteButton.bezelStyle = .rounded
+        let deleteButton = NSButton(frame: NSRect(x: 91, y: 296, width: 28, height: 24))
+        deleteButton.title = "-"
+        deleteButton.bezelStyle = .smallSquare
         deleteButton.target = self
         deleteButton.action = #selector(deleteAppButtonTapped(_:))
         view.addSubview(deleteButton)
@@ -91,4 +99,8 @@ extension ExcludeAppPreferenceViewController: NSTableViewDataSource {
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
         return AppEnvironment.current.excludeAppService.applications[safe: row]?.name
     }
+}
+
+private final class ExcludePreferencePaneView: NSView {
+    override var isFlipped: Bool { true }
 }
