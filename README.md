@@ -112,11 +112,20 @@ build/Build/Products/Release/ReClipt-macOS.zip
 The script fails early if the Developer ID certificate or notary profile is not
 available.
 
+## Performance & Optimizations (June 2026)
+
+ReClipt has been optimized for high-performance clipboard handling and low memory footprint:
+
+- **Database**: SQLite with Write-Ahead Logging (WAL) for concurrent operations and asynchronous initialization to ensure a fast app launch.
+- **Memory**: Efficient image resizing using `CoreGraphics` and compressed PNG thumbnail storage.
+- **Responsiveness**: Lazy-loading history submenus to handle 1000+ items without UI stutter.
+- **Native UI**: Transitioned to SF Symbols for a modern, integrated macOS aesthetic.
+
 ## Development Notes
 
-- The app stores clipboard history, snippets, and preferences locally.
+- The app stores clipboard history, snippets, and preferences locally in a SQLite database.
+- Database migrations and initialization are handled asynchronously.
 - The Swift module name is `ReClipt`.
-- The app display name is `ReClipt`.
 - Tests live in `ReCliptTests`.
 
 ## Privacy
