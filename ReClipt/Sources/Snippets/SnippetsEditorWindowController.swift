@@ -37,6 +37,7 @@ final class SnippetsEditorWindowController: NSWindowController {
     private var folderSettingView: NSView!
     private var snippetSettingView: NSView!
     private var emptyStateLabel: NSTextField!
+    private var updateSnippetTimer: Timer?
 
     private let snippetRepository = SnippetRepository()
     private var folders = [EditorSnippetFolder]()
@@ -647,7 +648,11 @@ extension SnippetsEditorWindowController: NSTextViewDelegate, NSSearchFieldDeleg
 
         let string = (textView.string as NSString).replacingCharacters(in: affectedCharRange, with: replacementString)
         snippet.content = string
-        snippetRepository.updateSnippetContent(snippet.id, content: string)
+
+        updateSnippetTimer?.invalidate()
+        updateSnippetTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            self?.snippetRepository.updateSnippetContent(snippet.id, content: string)
+        }
 
         return true
     }

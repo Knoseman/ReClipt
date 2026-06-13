@@ -21,8 +21,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - Init
     override init() {
         super.init()
-        // Initialize SQLite database
-        try? SQLiteStore.shared.open()
     }
 
     deinit {
@@ -108,6 +106,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - NSApplication Delegate
 extension AppDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        // Initialize SQLite database asynchronously
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try SQLiteStore.shared.open()
+            } catch {
+                print("Failed to open database: \(error)")
+            }
+        }
+
         // Environments
         AppEnvironment.replaceCurrent(environment: AppEnvironment.fromStorage())
         // UserDefaults

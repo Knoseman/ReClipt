@@ -37,7 +37,6 @@ final class ClipService {
 
     func clearAll() {
         pasteboardHistoryRepository.deleteAll()
-        try? FileManager.default.removeItem(atPath: ReCliptUtilities.applicationSupportFolder())
     }
 
     func delete(id: PasteboardHistory.ID) {

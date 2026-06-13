@@ -21,8 +21,8 @@ final class MenuManager: NSObject {
     // StatusMenu
     fileprivate var statusItem: NSStatusItem?
     // Icon Cache
-    fileprivate let folderIcon = NSImage(named: "icon_folder") ?? NSImage(size: .zero)
-    fileprivate let snippetIcon = NSImage(named: "icon_text") ?? NSImage(size: .zero)
+    fileprivate let folderIcon = NSImage(systemSymbolName: "folder", accessibilityDescription: nil) ?? NSImage(size: .zero)
+    fileprivate let snippetIcon = NSImage(systemSymbolName: "doc.text", accessibilityDescription: nil) ?? NSImage(size: .zero)
     // Other
     fileprivate let notificationCenter = NotificationCenter.default
     fileprivate let kMaxKeyEquivalents = 10
@@ -36,6 +36,7 @@ final class MenuManager: NSObject {
     private var defaultsObserver: NSObjectProtocol?
     private var currentStatusType: StatusType = .none
     private var isUpdatingStatusItem = false
+    private var rebuildMenuTimer: Timer?
 
     // MARK: - Enum Values
     enum StatusType: Int {
@@ -112,7 +113,7 @@ private extension MenuManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.createMainMenu()
+            self?.scheduleMenuRebuild()
         }
 
         // Snippet changes
@@ -122,7 +123,7 @@ private extension MenuManager {
             queue: .main
         ) { [weak self] _ in
             self?.snippetFolderDetails = self?.snippetRepository.fetchFolderDetails() ?? []
-            self?.createMainMenu()
+            self?.scheduleMenuRebuild()
         }
         snippetFolderDetails = snippetRepository.fetchFolderDetails()
 
@@ -140,8 +141,15 @@ private extension MenuManager {
         ) { [weak self] _ in
             guard let self else { return }
             guard !self.isUpdatingStatusItem else { return }
-            self.createMainMenu()
+            self.scheduleMenuRebuild()
             self.updateStatusItem()
+        }
+    }
+
+    private func scheduleMenuRebuild() {
+        rebuildMenuTimer?.invalidate()
+        rebuildMenuTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] _ in
+            self?.createMainMenu()
         }
     }
 
@@ -155,7 +163,9 @@ private extension MenuManager {
 private extension MenuManager {
      func createMainMenu() {
         mainMenu = NSMenu(title: Constants.Application.name)
+        mainMenu?.delegate = self
         historyMenu = NSMenu(title: Constants.Menu.history)
+        historyMenu?.delegate = self
         snippetMenu = NSMenu(title: Constants.Menu.snippet)
 
         addHistoryItems(mainMenu!)
@@ -200,11 +210,14 @@ private extension MenuManager {
             lastNumber = end
         }
         let menuItemTitle = "\(count + 1) - \(lastNumber)"
-        return makeSubmenuItem(menuItemTitle)
+        let item = makeSubmenuItem(menuItemTitle)
+        item.representedObject = HistorySubmenuInfo(offset: count, limit: numberOfItems)
+        return item
     }
 
     func makeSubmenuItem(_ title: String) -> NSMenuItem {
-        let subMenu = NSMenu(title: "")
+        let subMenu = NSMenu(title: title)
+        subMenu.delegate = self
         let subMenuItem = NSMenuItem(title: title, action: nil)
         subMenuItem.submenu = subMenu
         subMenuItem.image = (AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu)) ? folderIcon : nil
@@ -254,49 +267,40 @@ private extension MenuManager {
         labelItem.isEnabled = false
         menu.addItem(labelItem)
 
-        // History
-        let firstIndex = firstIndexOfMenuItems()
-        var listNumber = firstIndex
-        var subMenuCount = placeInLine
-        var subMenuIndex = 1 + placeInLine
+        let totalCount = min(pasteboardHistoryRepository.count(), maxHistory)
+        guard totalCount > 0 else { return }
 
         let ascending = !AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.reorderClipsAfterPasting)
         let showsMenuItemIcons = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu)
         let isShowImage = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
         let isShowColorCode = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
-        let historyDetails = pasteboardHistoryRepository.fetchHistoryDetails(
-            ascending: ascending,
-            includesThumbnailAsset: isShowImage || isShowColorCode,
-            limit: maxHistory
-        )
-        let currentSize = historyDetails.count
-        var i = 0
-        historyDetails.forEach { historyDetail in
-            if placeInLine < 1 || placeInLine - 1 < i {
-                // Folder
-                if i == subMenuCount {
-                    let subMenuItem = makeSubmenuItem(subMenuCount, start: firstIndex, end: currentSize, numberOfItems: placeInsideFolder)
-                    menu.addItem(subMenuItem)
-                    listNumber = firstIndex
-                }
 
-                // Clip
-                if let subMenu = menu.item(at: subMenuIndex)?.submenu {
-                    let menuItem = makeHistoryMenuItem(historyDetail, index: i, listNumber: listNumber)
-                    subMenu.addItem(menuItem)
-                    listNumber = incrementListNumber(listNumber, max: placeInsideFolder, start: firstIndex)
-                }
-            } else {
-                // Clip
-                let menuItem = makeHistoryMenuItem(historyDetail, index: i, listNumber: listNumber)
+        // Inline items
+        let inlineLimit = min(placeInLine, totalCount)
+        if inlineLimit > 0 {
+            let historyDetails = pasteboardHistoryRepository.fetchHistoryDetails(
+                ascending: ascending,
+                includesThumbnailAsset: isShowImage || isShowColorCode,
+                limit: inlineLimit,
+                offset: 0
+            )
+            let firstIndex = firstIndexOfMenuItems()
+            var listNumber = firstIndex
+            for (i, detail) in historyDetails.enumerated() {
+                let menuItem = makeHistoryMenuItem(detail, index: i, listNumber: listNumber)
                 menu.addItem(menuItem)
                 listNumber = incrementListNumber(listNumber, max: placeInLine, start: firstIndex)
             }
+        }
 
-            i += 1
-            if i == subMenuCount + placeInsideFolder {
-                subMenuCount += placeInsideFolder
-                subMenuIndex += 1
+        // Folders for the rest
+        if totalCount > placeInLine && placeInsideFolder > 0 {
+            let firstIndex = firstIndexOfMenuItems()
+            var offset = placeInLine
+            while offset < totalCount {
+                let subMenuItem = makeSubmenuItem(offset, start: firstIndex, end: totalCount, numberOfItems: placeInsideFolder)
+                menu.addItem(subMenuItem)
+                offset += placeInsideFolder
             }
         }
     }
@@ -475,4 +479,58 @@ private extension MenuManager {
     func firstIndexOfMenuItems() -> NSInteger {
         return AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.menuItemsTitleStartWithZero) ? 0 : 1
     }
+}
+
+// MARK: - NSMenuDelegate
+extension MenuManager: NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        // Find the item that owns this menu
+        let allMenus = [mainMenu, historyMenu].compactMap { $0 }
+        var parentItem: NSMenuItem?
+
+        for topMenu in allMenus {
+            if let item = topMenu.items.first(where: { $0.submenu === menu }) {
+                parentItem = item
+                break
+            }
+            // Check one level deeper for folders in mainMenu/historyMenu
+            for item in topMenu.items {
+                if let sub = item.submenu, let subItem = sub.items.first(where: { $0.submenu === menu }) {
+                    parentItem = subItem
+                    break
+                }
+            }
+            if parentItem != nil { break }
+        }
+
+        guard let item = parentItem, let info = item.representedObject as? HistorySubmenuInfo else { return }
+        
+        // Only populate if empty
+        guard menu.numberOfItems == 0 else { return }
+
+        let ascending = !AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.reorderClipsAfterPasting)
+        let showsMenuItemIcons = AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu)
+        let isShowImage = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showImageInTheMenu)
+        let isShowColorCode = showsMenuItemIcons && AppEnvironment.current.defaults.bool(forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
+        
+        let historyDetails = pasteboardHistoryRepository.fetchHistoryDetails(
+            ascending: ascending,
+            includesThumbnailAsset: isShowImage || isShowColorCode,
+            limit: info.limit,
+            offset: info.offset
+        )
+        
+        let firstIndex = firstIndexOfMenuItems()
+        var listNumber = firstIndex
+        for (i, detail) in historyDetails.enumerated() {
+            let menuItem = makeHistoryMenuItem(detail, index: info.offset + i, listNumber: listNumber)
+            menu.addItem(menuItem)
+            listNumber = incrementListNumber(listNumber, max: info.limit, start: firstIndex)
+        }
+    }
+}
+
+private struct HistorySubmenuInfo {
+    let offset: Int
+    let limit: Int
 }

@@ -13,44 +13,22 @@ import Cocoa
 
 extension NSImage {
     func resizeImage(_ width: CGFloat, _ height: CGFloat) -> NSImage? {
-        guard let newSize = aspectFitSize(width, height, allowsUpscaling: false),
-              let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let data = self.tiffRepresentation,
+              let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
 
-        let originalPixelWidth = CGFloat(cgImage.width)
-        let originalPixelHeight = CGFloat(cgImage.height)
-        let ratio = min(newSize.width / size.width, newSize.height / size.height)
-        let newPixelWidth = max(1, Int(floor(originalPixelWidth * ratio)))
-        let newPixelHeight = max(1, Int(floor(originalPixelHeight * ratio)))
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(width, height)
+        ]
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-        guard let context = CGContext(
-            data: nil,
-            width: newPixelWidth,
-            height: newPixelHeight,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo
-        ) else {
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
             return nil
         }
 
-        context.interpolationQuality = .high
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: newPixelWidth, height: newPixelHeight))
-
-        guard let resizedCGImage = context.makeImage() else {
-            return nil
-        }
-
-        let thumbnail = NSImage(size: newSize)
-        let bitmapRep = NSBitmapImageRep(cgImage: resizedCGImage)
-        bitmapRep.size = newSize
-        thumbnail.addRepresentation(bitmapRep)
-
-        return thumbnail
+        return NSImage(cgImage: cgImage, size: NSSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height)))
     }
 
     func aspectFitImage(_ width: CGFloat, _ height: CGFloat) -> NSImage? {

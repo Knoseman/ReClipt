@@ -15,10 +15,12 @@ import SQLite3
 protocol PasteboardHistoryRepositoryProtocol {
     func observeHistories() -> NotificationCenter.Notifications
     func hasHistories() -> Bool
+    func count() -> Int
     func fetchHistoryDetails(
         ascending: Bool,
         includesThumbnailAsset: Bool,
-        limit: Int
+        limit: Int,
+        offset: Int
     ) -> [PasteboardHistoryDetail]
     func fetchHistory(id: PasteboardHistory.ID) -> PasteboardHistory?
     func fetchContent(id: PasteboardHistory.ID) -> PasteboardContent?
@@ -59,10 +61,28 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
         }
     }
 
+    func count() -> Int {
+        do {
+            return try store.read { database in
+                var statement: OpaquePointer?
+                let sql = "SELECT COUNT(*) FROM pasteboardHistories"
+                guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+                    return 0
+                }
+                defer { sqlite3_finalize(statement) }
+                guard sqlite3_step(statement) == SQLITE_ROW else { return 0 }
+                return Int(sqlite3_column_int(statement, 0))
+            }
+        } catch {
+            return 0
+        }
+    }
+
     func fetchHistoryDetails(
         ascending: Bool,
         includesThumbnailAsset: Bool,
-        limit: Int
+        limit: Int,
+        offset: Int = 0
     ) -> [PasteboardHistoryDetail] {
         do {
             return try store.read { database in
@@ -71,7 +91,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
                     SELECT h.id, h.title, h.pasteboardTypes, h.deviceID, h.updateAt
                     FROM pasteboardHistories h
                     ORDER BY h.updateAt \(order)
-                    LIMIT ?
+                    LIMIT ? OFFSET ?
                 """
                 var statement: OpaquePointer?
                 guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
@@ -79,6 +99,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
                 }
                 defer { sqlite3_finalize(statement) }
                 SQLiteStore.bindInt(statement!, index: 1, value: limit)
+                SQLiteStore.bindInt(statement!, index: 2, value: offset)
 
                 var histories = [PasteboardHistory]()
                 while sqlite3_step(statement) == SQLITE_ROW {
@@ -312,19 +333,27 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
 
     private func thumbnailAsset(from content: PasteboardContent, id: PasteboardHistory.ID) -> PasteboardHistoryThumbnailAsset? {
         var asset: PasteboardHistoryThumbnailAsset?
-        if let thumbnailImage = content.thumbnailImage, let thumbnailData = thumbnailImage.tiffRepresentation {
-            asset = PasteboardHistoryThumbnailAsset(
-                pasteboardHistoryID: id,
-                kind: .image,
-                data: thumbnailData
-            )
+        if let thumbnailImage = content.thumbnailImage,
+           let cgImage = thumbnailImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+            if let thumbnailData = bitmapRep.representation(using: .png, properties: [:]) {
+                asset = PasteboardHistoryThumbnailAsset(
+                    pasteboardHistoryID: id,
+                    kind: .image,
+                    data: thumbnailData
+                )
+            }
         }
-        if let colorCodeImage = content.colorCodeImage, let colorCodeData = colorCodeImage.tiffRepresentation {
-            asset = PasteboardHistoryThumbnailAsset(
-                pasteboardHistoryID: id,
-                kind: .colorCode,
-                data: colorCodeData
-            )
+        if let colorCodeImage = content.colorCodeImage,
+           let cgImage = colorCodeImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+            if let colorCodeData = bitmapRep.representation(using: .png, properties: [:]) {
+                asset = PasteboardHistoryThumbnailAsset(
+                    pasteboardHistoryID: id,
+                    kind: .colorCode,
+                    data: colorCodeData
+                )
+            }
         }
         return asset
     }

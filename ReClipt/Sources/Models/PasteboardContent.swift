@@ -42,12 +42,28 @@ struct PasteboardContent: Equatable {
         let imageURL = assets.filter { $0.type == .fileURL }
             .compactMap { URL(dataRepresentation: $0.data, relativeTo: nil) }
             .first(where: { ["jpg", "jpeg", "png", "bmp", "tiff"].contains($0.pathExtension.lowercased()) })
-        if let imageURL {
-            return NSImage(contentsOf: imageURL)?.resizeImage(CGFloat(width), CGFloat(height))
-        } else if let data = data(for: .png) ?? data(for: .tiff) ?? data(for: .deprecatedTIFF) {
-            return NSImage(data: data)?.resizeImage(CGFloat(width), CGFloat(height))
+
+        if let imageURL, let source = CGImageSourceCreateWithURL(imageURL as CFURL, nil) {
+            return createThumbnail(from: source, width: width, height: height)
+        } else if let data = data(for: .png) ?? data(for: .tiff) ?? data(for: .deprecatedTIFF),
+                  let source = CGImageSourceCreateWithData(data as CFData, nil) {
+            return createThumbnail(from: source, width: width, height: height)
         }
         return nil
+    }
+
+    private func createThumbnail(from source: CGImageSource, width: Int, height: Int) -> NSImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(width, height)
+        ]
+
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+
+        return NSImage(cgImage: cgImage, size: NSSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height)))
     }
     var pasteboardItems: [NSPasteboardItem] {
         var countsByType: [NSPasteboard.PasteboardType: Int] = [:]
