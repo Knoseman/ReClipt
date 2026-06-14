@@ -13,6 +13,10 @@ import Cocoa
 
 extension NSImage {
     func resizeImage(_ width: CGFloat, _ height: CGFloat) -> NSImage? {
+        guard let newSize = aspectFitSize(width, height, allowsUpscaling: false) else {
+            return nil
+        }
+
         guard let data = self.tiffRepresentation,
               let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
@@ -21,14 +25,14 @@ extension NSImage {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(width, height)
+            kCGImageSourceThumbnailMaxPixelSize: max(newSize.width, newSize.height)
         ]
 
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
             return nil
         }
 
-        return NSImage(cgImage: cgImage, size: NSSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height)))
+        return NSImage(cgImage: cgImage, size: newSize)
     }
 
     func aspectFitImage(_ width: CGFloat, _ height: CGFloat) -> NSImage? {
