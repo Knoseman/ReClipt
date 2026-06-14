@@ -113,6 +113,32 @@ final class HotKeyService: NSObject {
         guard let data = AppEnvironment.current.defaults.object(forKey: key) as? Data else { return nil }
         return try? NSKeyedUnarchiver.unarchivedObject(ofClass: KeyCombo.self, from: data)
     }
+
+    static func migrateLegacyKeyCombos(in defaults: UserDefaults) {
+        guard let keyCombos = defaults.object(forKey: Constants.UserDefaults.hotKeys) as? [String: Any] else { return }
+
+        // Main menu
+        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.clip) {
+            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
+            defaults.set(keyCombo.archive(), forKey: Constants.HotKey.mainKeyCombo)
+        }
+        // History menu
+        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.history) {
+            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
+            defaults.set(keyCombo.archive(), forKey: Constants.HotKey.historyKeyCombo)
+        }
+        // Snippet menu
+        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.snippet) {
+            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
+            defaults.set(keyCombo.archive(), forKey: Constants.HotKey.snippetKeyCombo)
+        }
+    }
+
+    static func parse(with keyCombos: [String: Any], forKey key: String) -> (Int, Int)? {
+        guard let combos = keyCombos[key] as? [String: Any] else { return nil }
+        guard let keyCode = combos["keyCode"] as? Int, let modifiers = combos["modifiers"] as? Int else { return nil }
+        return (keyCode, modifiers)
+    }
 }
 
 // MARK: - Carbon HotKey Registration
@@ -212,29 +238,7 @@ private extension HotKeyService {
      *  Changed framework, PTHotKey to Magnet
      */
     func migrationKeyCombos() {
-        guard let keyCombos = AppEnvironment.current.defaults.object(forKey: Constants.UserDefaults.hotKeys) as? [String: Any] else { return }
-
-        // Main menu
-        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.clip) {
-            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
-            AppEnvironment.current.defaults.set(keyCombo.archive(), forKey: Constants.HotKey.mainKeyCombo)
-        }
-        // History menu
-        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.history) {
-            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
-            AppEnvironment.current.defaults.set(keyCombo.archive(), forKey: Constants.HotKey.historyKeyCombo)
-        }
-        // Snippet menu
-        if let (keyCode, modifiers) = parse(with: keyCombos, forKey: Constants.Menu.snippet) {
-            let keyCombo = KeyCombo(QWERTYKeyCode: keyCode, carbonModifiers: modifiers)
-            AppEnvironment.current.defaults.set(keyCombo.archive(), forKey: Constants.HotKey.snippetKeyCombo)
-        }
-    }
-
-    func parse(with keyCombos: [String: Any], forKey key: String) -> (Int, Int)? {
-        guard let combos = keyCombos[key] as? [String: Any] else { return nil }
-        guard let keyCode = combos["keyCode"] as? Int, let modifiers = combos["modifiers"] as? Int else { return nil }
-        return (keyCode, modifiers)
+        Self.migrateLegacyKeyCombos(in: AppEnvironment.current.defaults)
     }
 }
 

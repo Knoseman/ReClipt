@@ -63,10 +63,8 @@ final class HotKeyServiceTests {
             Constants.Menu.snippet: ["keyCode": 12, "modifiers": 512]
         ], forKey: Constants.UserDefaults.hotKeys)
 
-        AppEnvironment.push(defaults: defaults)
-        defer { _ = AppEnvironment.popLast() }
-
-        HotKeyService().setupDefaultHotKeys()
+        HotKeyService.migrateLegacyKeyCombos(in: defaults)
+        defaults.set(true, forKey: Constants.HotKey.migrateNewKeyCombo)
 
         #expect(try archivedKeyCombo(defaults, Constants.HotKey.mainKeyCombo)?.QWERTYKeyCode == 10)
         #expect(try archivedKeyCombo(defaults, Constants.HotKey.mainKeyCombo)?.modifiers == 768)

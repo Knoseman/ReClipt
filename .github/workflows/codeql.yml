@@ -1,18 +1,20 @@
 name: CodeQL
 
 on:
-  push:
-    branches: ["main", "develop", "master"]
-  pull_request:
-    branches: ["main", "develop", "master"]
+  workflow_dispatch:
   schedule:
     - cron: '0 9 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     
     runs-on: ${{ (matrix.language == 'swift' && 'macos-26') || 'ubuntu-latest' }}
+    timeout-minutes: 25
     
     permissions:
       security-events: write
@@ -50,12 +52,14 @@ jobs:
     - name: Run manual build steps
       if: matrix.build-mode == 'manual'
       run: |
-        /Applications/Xcode_26.5.app/Contents/Developer/usr/bin/xcodebuild \
-          CODE_SIGN_IDENTITY="" \
+        DEVELOPER_DIR=/Applications/Xcode_26.5.app/Contents/Developer xcodebuild \
+          CODE_SIGN_IDENTITY=- \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
           -project ReClipt.xcodeproj \
           -scheme "ReClipt" \
+          -configuration Release \
+          -derivedDataPath "$GITHUB_WORKSPACE/build/CodeQL" \
           -clonedSourcePackagesDirPath "$GITHUB_WORKSPACE/.spm-cache/SourcePackages" \
           -packageCachePath "$GITHUB_WORKSPACE/.spm-cache/PackageCache" \
           -skipPackagePluginValidation \
