@@ -37,13 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     // MARK: - Menu Actions
     @objc func showPreferenceWindow() {
-        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         NSApp.activate(ignoringOtherApps: true)
         PreferencesWindowController.sharedController.showWindow(self)
     }
 
     @objc func showSnippetEditorWindow() {
-        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         NSApp.activate(ignoringOtherApps: true)
         SnippetsEditorWindowController.sharedController.showWindow(self)
     }

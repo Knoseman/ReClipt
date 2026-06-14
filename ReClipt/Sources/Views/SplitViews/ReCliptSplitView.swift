@@ -13,7 +13,7 @@ import Cocoa
 class ReCliptSplitView: NSSplitView {
 
     // MARK: - Properties
-    @IBInspectable var separatorColor: NSColor = .scrollBarColor {
+    @IBInspectable var separatorColor: NSColor = .separatorColor {
         didSet {
             needsDisplay = true
         }

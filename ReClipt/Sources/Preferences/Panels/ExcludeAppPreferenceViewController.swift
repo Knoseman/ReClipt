@@ -9,6 +9,7 @@
 //
 
 import Cocoa
+import UniformTypeIdentifiers
 
 class ExcludeAppPreferenceViewController: NSViewController {
     // MARK: - Properties
@@ -60,7 +61,7 @@ class ExcludeAppPreferenceViewController: NSViewController {
 
     @objc private func addAppButtonTapped(_ sender: AnyObject) {
         let openPanel = NSOpenPanel()
-        openPanel.allowedFileTypes = ["app"]
+        openPanel.allowedContentTypes = [.applicationBundle]
         openPanel.allowsMultipleSelection = true
         openPanel.resolvesAliases = true
         openPanel.prompt = String(localized: "Add")

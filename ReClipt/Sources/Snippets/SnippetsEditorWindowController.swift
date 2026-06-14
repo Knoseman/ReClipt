@@ -9,6 +9,7 @@
 //
 
 import Cocoa
+import UniformTypeIdentifiers
 
 enum SnippetsEditorControlIdentifier {
     static let searchField = NSUserInterfaceItemIdentifier("SnippetsEditor.searchField")
@@ -46,13 +47,13 @@ struct AppKitSnippetsEditorDialogProvider: SnippetsEditorDialogProviding {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
-        panel.allowedFileTypes = [Constants.Xml.fileType, "plist"]
+        panel.allowedContentTypes = [.xml, .propertyList]
         return panel.runModal() == NSApplication.ModalResponse.OK ? panel.urls.first : nil
     }
 
     func exportFileURL(defaultFileName: String) -> URL? {
         let panel = NSSavePanel()
-        panel.allowedFileTypes = [Constants.Xml.fileType]
+        panel.allowedContentTypes = [.xml]
         panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
         panel.nameFieldStringValue = defaultFileName
         return panel.runModal() == NSApplication.ModalResponse.OK ? panel.url : nil
