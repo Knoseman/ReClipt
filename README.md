@@ -27,8 +27,8 @@ Run the full local validation pass with:
 ./scripts/validate.sh
 ```
 
-This runs the test suite, builds the Release app, and verifies the app binary is
-`arm64`.
+This runs the test suite, builds a disposable unsigned Release app under
+`build/Validation`, and verifies the app binary is `arm64`.
 
 This repo includes a local release build script:
 
@@ -56,13 +56,8 @@ Notes:
 
 ### Manual App Validation
 
-After `./scripts/validate.sh` succeeds, launch the built app:
-
-```bash
-open build/Build/Products/Release/ReClipt.app
-```
-
-For a quick automated app-level smoke test, run:
+After `./scripts/validate.sh` succeeds, build the normal locally signed Release
+app and run the app-level smoke test:
 
 ```bash
 ./scripts/build-release.sh
@@ -75,6 +70,12 @@ signature, launches it, checks that it remains running briefly, then quits it. I
 intentionally quits any already-running ReClipt instance first so each run starts
 from a fresh app process. This matters because Accessibility permissions are tied
 to the app's signed identity.
+
+For manual testing, launch the signed app:
+
+```bash
+open build/Build/Products/Release/ReClipt.app
+```
 
 Check these app-level behaviors manually:
 

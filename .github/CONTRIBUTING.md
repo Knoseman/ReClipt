@@ -35,7 +35,9 @@ Before opening a change, run:
 ./scripts/validate.sh
 ```
 
-This runs the full test suite, builds the Release app, and verifies the Release
-binary contains the supported architecture. If a full Xcode install is not
+This runs the full test suite, builds a disposable unsigned Release app under
+`build/Validation`, and verifies the Release binary contains the supported
+architecture. Use `./scripts/build-release.sh` when you need the normal signed
+app for manual Accessibility-dependent testing. If a full Xcode install is not
 available, at least run local Swift parsing or typechecking for the files you
 changed.
