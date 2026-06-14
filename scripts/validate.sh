@@ -14,6 +14,26 @@ LOG_DIR="${LOG_DIR:-$ROOT_DIR/build/logs}"
 TEST_LOG="$LOG_DIR/validate-test.log"
 BUILD_LOG="$LOG_DIR/validate-release-build.log"
 DEVELOPER_DIR_OUTPUT="$(xcode-select -p 2>/dev/null || true)"
+VALIDATE_CLEAN="${VALIDATE_CLEAN:-0}"
+
+typeset -a XCODEBUILD_PACKAGE_ARGS
+typeset -a XCODEBUILD_ACTION_PREFIX
+
+if [[ -n "${CLONED_SOURCE_PACKAGES_DIR_PATH:-}" ]]; then
+  XCODEBUILD_PACKAGE_ARGS+=(
+    -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR_PATH"
+  )
+fi
+
+if [[ -n "${PACKAGE_CACHE_PATH:-}" ]]; then
+  XCODEBUILD_PACKAGE_ARGS+=(
+    -packageCachePath "$PACKAGE_CACHE_PATH"
+  )
+fi
+
+if [[ "$VALIDATE_CLEAN" == "1" ]]; then
+  XCODEBUILD_ACTION_PREFIX+=(clean)
+fi
 
 if [[ ! -d "$PROJECT_PATH" ]]; then
   echo "Project not found: $PROJECT_PATH" >&2
@@ -41,8 +61,10 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   -scheme "$SCHEME" \
   -project "$PROJECT_PATH" \
+  "${XCODEBUILD_PACKAGE_ARGS[@]}" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  "${XCODEBUILD_ACTION_PREFIX[@]}" \
   test 2>&1 | tee "$TEST_LOG"
 
 echo
@@ -57,8 +79,10 @@ xcodebuild \
   -project "$PROJECT_PATH" \
   -configuration "$CONFIGURATION" \
   -derivedDataPath "$DERIVED_DATA_PATH" \
+  "${XCODEBUILD_PACKAGE_ARGS[@]}" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  "${XCODEBUILD_ACTION_PREFIX[@]}" \
   build 2>&1 | tee "$BUILD_LOG"
 
 if [[ ! -x "$BINARY_PATH" ]]; then

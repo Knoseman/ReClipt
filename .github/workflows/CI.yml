@@ -19,37 +19,11 @@ jobs:
         restore-keys: |
           spm-${{ runner.os }}-
 
-    - name: Run tests
-      run: |
-        xcodebuild \
-          CODE_SIGN_IDENTITY=- \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          -scheme "ReClipt" \
-          -project ReClipt.xcodeproj \
-          -clonedSourcePackagesDirPath "$GITHUB_WORKSPACE/.spm-cache/SourcePackages" \
-          -packageCachePath "$GITHUB_WORKSPACE/.spm-cache/PackageCache" \
-          -skipPackagePluginValidation \
-          -skipMacroValidation \
-          clean test
-
-    - name: Verify Apple Silicon build
-      run: |
-        xcodebuild \
-          CODE_SIGN_IDENTITY=- \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          ARCHS=arm64 \
-          ONLY_ACTIVE_ARCH=NO \
-          -scheme "ReClipt" \
-          -project ReClipt.xcodeproj \
-          -configuration Release \
-          -derivedDataPath "$GITHUB_WORKSPACE/build" \
-          -clonedSourcePackagesDirPath "$GITHUB_WORKSPACE/.spm-cache/SourcePackages" \
-          -packageCachePath "$GITHUB_WORKSPACE/.spm-cache/PackageCache" \
-          -skipPackagePluginValidation \
-          -skipMacroValidation \
-          clean build
-
-        binary="$GITHUB_WORKSPACE/build/Build/Products/Release/ReClipt.app/Contents/MacOS/ReClipt"
-        lipo "$binary" -verify_arch arm64
+    - name: Validate
+      env:
+        DERIVED_DATA_PATH: ${{ github.workspace }}/build
+        LOG_DIR: ${{ github.workspace }}/build/logs
+        CLONED_SOURCE_PACKAGES_DIR_PATH: ${{ github.workspace }}/.spm-cache/SourcePackages
+        PACKAGE_CACHE_PATH: ${{ github.workspace }}/.spm-cache/PackageCache
+        VALIDATE_CLEAN: "1"
+      run: ./scripts/validate.sh
