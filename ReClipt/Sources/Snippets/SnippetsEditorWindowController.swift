@@ -10,6 +10,21 @@
 
 import Cocoa
 
+enum SnippetsEditorControlIdentifier {
+    static let searchField = NSUserInterfaceItemIdentifier("SnippetsEditor.searchField")
+    static let addSnippetButton = NSUserInterfaceItemIdentifier("SnippetsEditor.addSnippetButton")
+    static let addFolderButton = NSUserInterfaceItemIdentifier("SnippetsEditor.addFolderButton")
+    static let deleteButton = NSUserInterfaceItemIdentifier("SnippetsEditor.deleteButton")
+    static let importButton = NSUserInterfaceItemIdentifier("SnippetsEditor.importButton")
+    static let exportButton = NSUserInterfaceItemIdentifier("SnippetsEditor.exportButton")
+    static let folderTitleTextField = NSUserInterfaceItemIdentifier("SnippetsEditor.folderTitleTextField")
+    static let folderEnabledCheckbox = NSUserInterfaceItemIdentifier("SnippetsEditor.folderEnabledCheckbox")
+    static let snippetTitleTextField = NSUserInterfaceItemIdentifier("SnippetsEditor.snippetTitleTextField")
+    static let snippetEnabledCheckbox = NSUserInterfaceItemIdentifier("SnippetsEditor.snippetEnabledCheckbox")
+    static let textView = NSUserInterfaceItemIdentifier("SnippetsEditor.textView")
+    static let outlineView = NSUserInterfaceItemIdentifier("SnippetsEditor.outlineView")
+}
+
 final class SnippetsEditorWindowController: NSWindowController {
 
     // MARK: - Properties
@@ -39,7 +54,7 @@ final class SnippetsEditorWindowController: NSWindowController {
     private var emptyStateLabel: NSTextField!
     private var updateSnippetTimer: Timer?
 
-    private let snippetRepository = SnippetRepository()
+    private let snippetRepository: SnippetRepositoryProtocol
     private var folders = [EditorSnippetFolder]()
     private var searchQuery = ""
     private var hasConfiguredWindow = false
@@ -61,6 +76,21 @@ final class SnippetsEditorWindowController: NSWindowController {
         }
     }
 
+    // MARK: - Init
+
+    init(
+        window: NSWindow?,
+        snippetRepository: SnippetRepositoryProtocol = SnippetRepository()
+    ) {
+        self.snippetRepository = snippetRepository
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) {
+        self.snippetRepository = SnippetRepository()
+        super.init(coder: coder)
+    }
+
     // MARK: - Window Life Cycle
     override func windowDidLoad() {
         super.windowDidLoad()
@@ -75,7 +105,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func configureWindowIfNeeded() {
+    func configureWindowIfNeeded() {
         guard !hasConfiguredWindow else { return }
 
         hasConfiguredWindow = true
@@ -116,6 +146,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         ))
         searchField.autoresizingMask = [.width, .minYMargin]
         searchField.placeholderString = String(localized: "Search")
+        searchField.identifier = SnippetsEditorControlIdentifier.searchField
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
         searchField.sendsSearchStringImmediately = true
@@ -128,6 +159,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         scrollView.borderType = .bezelBorder
 
         outlineView = NSOutlineView()
+        outlineView.identifier = SnippetsEditorControlIdentifier.outlineView
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
         nameColumn.dataCell = SnippetsEditorCell(textCell: "")
         outlineView.addTableColumn(nameColumn)
@@ -142,6 +174,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let addSnippetButton = NSButton(frame: NSRect(x: 12, y: 8, width: 28, height: 24))
         addSnippetButton.title = ""
         addSnippetButton.image = NSImage(systemSymbolName: "doc.badge.plus", accessibilityDescription: String(localized: "Add Snippet"))
+        addSnippetButton.identifier = SnippetsEditorControlIdentifier.addSnippetButton
         addSnippetButton.bezelStyle = .smallSquare
         addSnippetButton.toolTip = String(localized: "Add Snippet")
         addSnippetButton.target = self
@@ -151,6 +184,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let addFolderButton = NSButton(frame: NSRect(x: 48, y: 8, width: 28, height: 24))
         addFolderButton.title = ""
         addFolderButton.image = NSImage(systemSymbolName: "folder.badge.plus", accessibilityDescription: String(localized: "Add Folder"))
+        addFolderButton.identifier = SnippetsEditorControlIdentifier.addFolderButton
         addFolderButton.bezelStyle = .smallSquare
         addFolderButton.toolTip = String(localized: "Add Folder")
         addFolderButton.target = self
@@ -160,6 +194,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let deleteButton = NSButton(frame: NSRect(x: 84, y: 8, width: 28, height: 24))
         deleteButton.title = ""
         deleteButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: String(localized: "Delete"))
+        deleteButton.identifier = SnippetsEditorControlIdentifier.deleteButton
         deleteButton.bezelStyle = .smallSquare
         deleteButton.toolTip = String(localized: "Delete")
         deleteButton.target = self
@@ -169,6 +204,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let importButton = NSButton(frame: NSRect(x: 124, y: 8, width: 28, height: 24))
         importButton.title = ""
         importButton.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: String(localized: "Import Snippets"))
+        importButton.identifier = SnippetsEditorControlIdentifier.importButton
         importButton.bezelStyle = .smallSquare
         importButton.toolTip = String(localized: "Import Snippets")
         importButton.target = self
@@ -178,6 +214,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         let exportButton = NSButton(frame: NSRect(x: 160, y: 8, width: 28, height: 24))
         exportButton.title = ""
         exportButton.image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: String(localized: "Export Snippets"))
+        exportButton.identifier = SnippetsEditorControlIdentifier.exportButton
         exportButton.bezelStyle = .smallSquare
         exportButton.toolTip = String(localized: "Export Snippets")
         exportButton.target = self
@@ -202,12 +239,14 @@ final class SnippetsEditorWindowController: NSWindowController {
         folderSettingView.addSubview(folderTitleLabel)
 
         folderTitleTextField = NSTextField(frame: NSRect(x: 14, y: 36, width: folderSettingView.frame.width - 28, height: 24))
+        folderTitleTextField.identifier = SnippetsEditorControlIdentifier.folderTitleTextField
         folderTitleTextField.autoresizingMask = [.width]
         folderTitleTextField.target = self
         folderTitleTextField.action = #selector(folderTitleChanged(_:))
         folderSettingView.addSubview(folderTitleTextField)
 
         folderEnabledCheckbox = NSButton(checkboxWithTitle: String(localized: "Enabled"), target: self, action: #selector(folderEnabledChanged(_:)))
+        folderEnabledCheckbox.identifier = SnippetsEditorControlIdentifier.folderEnabledCheckbox
         folderEnabledCheckbox.frame = NSRect(x: 14, y: 8, width: 120, height: 22)
         folderSettingView.addSubview(folderEnabledCheckbox)
         rightView.addSubview(folderSettingView)
@@ -222,12 +261,14 @@ final class SnippetsEditorWindowController: NSWindowController {
         snippetSettingView.addSubview(snippetTitleLabel)
 
         snippetTitleTextField = NSTextField(frame: NSRect(x: 14, y: 36, width: snippetSettingView.frame.width - 28, height: 24))
+        snippetTitleTextField.identifier = SnippetsEditorControlIdentifier.snippetTitleTextField
         snippetTitleTextField.autoresizingMask = [.width]
         snippetTitleTextField.target = self
         snippetTitleTextField.action = #selector(snippetTitleChanged(_:))
         snippetSettingView.addSubview(snippetTitleTextField)
 
         snippetEnabledCheckbox = NSButton(checkboxWithTitle: String(localized: "Enabled"), target: self, action: #selector(snippetEnabledChanged(_:)))
+        snippetEnabledCheckbox.identifier = SnippetsEditorControlIdentifier.snippetEnabledCheckbox
         snippetEnabledCheckbox.frame = NSRect(x: 14, y: 8, width: 120, height: 22)
         snippetSettingView.addSubview(snippetEnabledCheckbox)
         rightView.addSubview(snippetSettingView)
@@ -238,6 +279,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         textScrollView.borderType = .bezelBorder
 
         textView = NSTextView()
+        textView.identifier = SnippetsEditorControlIdentifier.textView
         textView.font = NSFont.systemFont(ofSize: 14)
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isRichText = false
