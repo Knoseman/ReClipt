@@ -106,11 +106,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - NSApplication Delegate
 extension AppDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Initialize SQLite database asynchronously
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                try SQLiteStore.shared.open()
-            } catch {
+        SQLiteStore.shared.openAsync { result in
+            if case .failure(let error) = result {
                 print("Failed to open database: \(error)")
             }
         }

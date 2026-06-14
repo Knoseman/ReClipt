@@ -53,6 +53,20 @@ final class SQLiteStore {
         }
     }
 
+    func openAsync(
+        qos: DispatchQoS.QoSClass = .userInitiated,
+        completion: ((Result<Void, Error>) -> Void)? = nil
+    ) {
+        DispatchQueue.global(qos: qos).async {
+            do {
+                try self.open()
+                completion?(.success(()))
+            } catch {
+                completion?(.failure(error))
+            }
+        }
+    }
+
     func close() {
         queue.sync {
             lock.lock(); defer { lock.unlock() }

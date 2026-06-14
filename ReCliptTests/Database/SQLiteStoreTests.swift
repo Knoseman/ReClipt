@@ -19,9 +19,9 @@ struct SQLiteStoreTests {
     @Test
     func openAndClose() throws {
         try TestSQLiteStore.withCleanStore {
-            let store = SQLiteStore.shared
-            try store.open()
-            #expect(store != nil)
+            try SQLiteStore.shared.read { database in
+                #expect(sqlite3_db_filename(database, "main") != nil)
+            }
         }
     }
 
@@ -61,6 +61,82 @@ struct SQLiteStoreTests {
                 ])
             }
         }
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func openAsyncCompletesAndMigratesSchema() throws {
+        let store = SQLiteStore.shared
+        store.close()
+
+        try waitForAsyncOpen(store).get()
+        defer { try? TestSQLiteStore.clear(store) }
+
+        try store.read { database in
+            var statement: OpaquePointer?
+            guard sqlite3_prepare_v2(database, "PRAGMA user_version", -1, &statement, nil) == SQLITE_OK else {
+                Issue.record("Failed to prepare user_version statement")
+                return
+            }
+            defer { sqlite3_finalize(statement) }
+
+            guard sqlite3_step(statement) == SQLITE_ROW else {
+                Issue.record("user_version did not return a row")
+                return
+            }
+
+            #expect(sqlite3_column_int(statement, 0) == 1)
+        }
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func concurrentOpenAsyncCallsAreIdempotent() throws {
+        let store = SQLiteStore.shared
+        store.close()
+
+        let lock = NSLock()
+        var results = [Result<Void, Error>]()
+        let group = DispatchGroup()
+
+        for _ in 0..<8 {
+            group.enter()
+            store.openAsync { result in
+                lock.withLock {
+                    results.append(result)
+                }
+                group.leave()
+            }
+        }
+
+        #expect(group.wait(timeout: .now() + 5) == .success)
+        #expect(results.count == 8)
+        #expect(results.allSatisfy { result in
+            if case .success = result { return true }
+            return false
+        })
+        try TestSQLiteStore.clear(store)
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func repositoriesAreUsableAfterAsyncOpen() throws {
+        let store = SQLiteStore.shared
+        store.close()
+
+        try waitForAsyncOpen(store).get()
+        try TestSQLiteStore.clear(store)
+        defer { try? TestSQLiteStore.clear(store) }
+
+        let historyRepository = PasteboardHistoryRepository()
+        let content = try #require(
+            PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Async Ready".utf8))])
+        )
+        historyRepository.save(id: "async-ready", content: content, updateAt: 1000)
+
+        let snippetRepository = SnippetRepository()
+        let folder = try #require(snippetRepository.insertFolder())
+        snippetRepository.updateFolderTitle(folder.id, title: "Async Folder")
+
+        #expect(historyRepository.fetchHistory(id: "async-ready")?.title == "Async Ready")
+        #expect(snippetRepository.fetchFolderDetail(id: folder.id)?.folder.title == "Async Folder")
     }
 
     @Test
@@ -141,6 +217,27 @@ struct SQLiteStoreTests {
             }
         }
     }
+
+    private func waitForAsyncOpen(_ store: SQLiteStore) -> Result<Void, Error> {
+        let semaphore = DispatchSemaphore(value: 0)
+        let lock = NSLock()
+        var result: Result<Void, Error>?
+
+        store.openAsync { openResult in
+            lock.withLock {
+                result = openResult
+            }
+            semaphore.signal()
+        }
+
+        guard semaphore.wait(timeout: .now() + 5) == .success else {
+            return .failure(SQLiteStoreError.unknown("Timed out waiting for async open"))
+        }
+
+        return lock.withLock {
+            result ?? .failure(SQLiteStoreError.unknown("Async open completed without a result"))
+        }
+    }
 }
 
 enum TestSQLiteStore {
@@ -157,7 +254,7 @@ enum TestSQLiteStore {
         try clear(store)
     }
 
-    private static func clear(_ store: SQLiteStore) throws {
+    static func clear(_ store: SQLiteStore) throws {
         try store.write { database in
             for sql in [
                 "DELETE FROM pasteboardHistoryThumbnailAssets",
