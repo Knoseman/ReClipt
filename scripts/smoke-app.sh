@@ -11,6 +11,7 @@ BINARY_PATH="$APP_PATH/Contents/MacOS/ReClipt"
 EXPECTED_BUNDLE_IDENTIFIER="${EXPECTED_BUNDLE_IDENTIFIER:-com.knoseman.reclipt}"
 PROCESS_NAME="${PROCESS_NAME:-ReClipt}"
 LAUNCH_TIMEOUT_SECONDS="${LAUNCH_TIMEOUT_SECONDS:-10}"
+SMOKE_REQUIRE_VALID_SIGNATURE="${SMOKE_REQUIRE_VALID_SIGNATURE:-1}"
 SMOKE_LEAVE_RUNNING="${SMOKE_LEAVE_RUNNING:-0}"
 launched_app=0
 
@@ -74,6 +75,10 @@ ls_ui_element="$(plist_value LSUIElement)"
 [[ "$ls_ui_element" == "true" ]] || fail "LSUIElement must be true so ReClipt stays out of the Dock"
 
 lipo "$BINARY_PATH" -verify_arch arm64 >/dev/null
+
+if [[ "$SMOKE_REQUIRE_VALID_SIGNATURE" == "1" ]]; then
+  codesign --verify --deep --strict "$APP_PATH" >/dev/null 2>&1 || fail "app signature is invalid; run ./scripts/build-release.sh before smoke testing Accessibility-dependent paste behavior"
+fi
 
 echo "Quitting any running $PROCESS_NAME instance..."
 quit_running_app

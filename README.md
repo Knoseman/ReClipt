@@ -65,13 +65,16 @@ open build/Build/Products/Release/ReClipt.app
 For a quick automated app-level smoke test, run:
 
 ```bash
+./scripts/build-release.sh
 ./scripts/smoke-app.sh
 ```
 
-This verifies the built app bundle, confirms ReClipt is configured as a menu bar
-app without a Dock icon, launches it, checks that it remains running briefly,
-then quits it. It intentionally quits any already-running ReClipt instance first
-so each run starts from a fresh app process.
+This builds the normal locally signed Release app, verifies the app bundle,
+confirms ReClipt is configured as a menu bar app without a Dock icon, checks the
+signature, launches it, checks that it remains running briefly, then quits it. It
+intentionally quits any already-running ReClipt instance first so each run starts
+from a fresh app process. This matters because Accessibility permissions are tied
+to the app's signed identity.
 
 Check these app-level behaviors manually:
 
