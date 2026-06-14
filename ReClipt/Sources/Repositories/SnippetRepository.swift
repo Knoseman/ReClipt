@@ -14,6 +14,7 @@ import SQLite3
 protocol SnippetRepositoryProtocol {
     func observeFolderDetails() -> NotificationCenter.Notifications
     func fetchFolderDetails() -> [SnippetFolderDetail]
+    func searchFolderDetails(query: String) -> [SnippetFolderDetail]
     func fetchFolderDetail(id: SnippetFolder.ID) -> SnippetFolderDetail?
 
     func insertFolder() -> SnippetFolder?
@@ -53,6 +54,38 @@ final class SnippetRepository: SnippetRepositoryProtocol {
                 let folders = fetchAllFolders(database: database)
                 let snippets = fetchAllSnippets(database: database)
                 return Self.folderDetails(folders: folders, snippets: snippets)
+            }
+        } catch {
+            return []
+        }
+    }
+
+    func searchFolderDetails(query: String) -> [SnippetFolderDetail] {
+        let matchQuery = SQLiteStore.ftsMatchQuery(query)
+        guard !matchQuery.isEmpty else {
+            return fetchFolderDetails()
+        }
+
+        do {
+            return try store.read { database in
+                let matchedFolderIDs = fetchMatchingFolderIDs(database: database, matchQuery: matchQuery)
+                let matchedSnippets = fetchMatchingSnippets(database: database, matchQuery: matchQuery)
+                let matchedSnippetFolderIDs = Set(matchedSnippets.map(\.folderID))
+                let folderIDs = matchedFolderIDs.union(matchedSnippetFolderIDs)
+
+                guard !folderIDs.isEmpty else { return [] }
+
+                let folders = fetchFolders(database: database, ids: folderIDs)
+                let allSnippets = fetchSnippetsForFolders(database: database, folderIDs: folderIDs)
+                let allSnippetsByFolderID = Dictionary(grouping: allSnippets, by: \.folderID)
+                let matchedSnippetsByFolderID = Dictionary(grouping: matchedSnippets, by: \.folderID)
+
+                return folders.map { folder in
+                    let snippets = matchedFolderIDs.contains(folder.id)
+                        ? allSnippetsByFolderID[folder.id] ?? []
+                        : matchedSnippetsByFolderID[folder.id] ?? []
+                    return SnippetFolderDetail(folder: folder, snippets: snippets)
+                }
             }
         } catch {
             return []
@@ -442,6 +475,97 @@ final class SnippetRepository: SnippetRepositoryProtocol {
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(statement) }
+        var snippets = [Snippet]()
+        while sqlite3_step(statement) == SQLITE_ROW {
+            snippets.append(parseSnippet(statement!))
+        }
+        return snippets
+    }
+
+    private func fetchMatchingFolderIDs(database: OpaquePointer, matchQuery: String) -> Set<SnippetFolder.ID> {
+        let sql = """
+            SELECT f.id
+            FROM snippetFolders f
+            INNER JOIN snippetFolderSearch ON snippetFolderSearch.id = f.id
+            WHERE snippetFolderSearch MATCH ?
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        SQLiteStore.bindText(statement!, index: 1, value: matchQuery)
+
+        var folderIDs = Set<SnippetFolder.ID>()
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let id = UUID(uuidString: SQLiteStore.columnText(statement!, index: 0)) {
+                folderIDs.insert(id)
+            }
+        }
+        return folderIDs
+    }
+
+    private func fetchMatchingSnippets(database: OpaquePointer, matchQuery: String) -> [Snippet] {
+        let sql = """
+            SELECT s.id, s.folderID, s.title, s.content, s."index", s.isEnabled
+            FROM snippets s
+            INNER JOIN snippetSearch ON snippetSearch.id = s.id
+            WHERE snippetSearch MATCH ?
+            ORDER BY s."index"
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        SQLiteStore.bindText(statement!, index: 1, value: matchQuery)
+
+        var snippets = [Snippet]()
+        while sqlite3_step(statement) == SQLITE_ROW {
+            snippets.append(parseSnippet(statement!))
+        }
+        return snippets
+    }
+
+    private func fetchFolders(database: OpaquePointer, ids: Set<SnippetFolder.ID>) -> [SnippetFolder] {
+        guard !ids.isEmpty else { return [] }
+
+        let placeholders = Array(repeating: "?", count: ids.count).joined(separator: ", ")
+        let sql = """
+            SELECT id, title, "index", isEnabled
+            FROM snippetFolders
+            WHERE id IN (\(placeholders))
+            ORDER BY "index"
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+
+        for (index, id) in ids.enumerated() {
+            SQLiteStore.bindText(statement!, index: index + 1, value: id.uuidString)
+        }
+
+        var folders = [SnippetFolder]()
+        while sqlite3_step(statement) == SQLITE_ROW {
+            folders.append(parseFolder(statement!))
+        }
+        return folders
+    }
+
+    private func fetchSnippetsForFolders(database: OpaquePointer, folderIDs: Set<SnippetFolder.ID>) -> [Snippet] {
+        guard !folderIDs.isEmpty else { return [] }
+
+        let placeholders = Array(repeating: "?", count: folderIDs.count).joined(separator: ", ")
+        let sql = """
+            SELECT id, folderID, title, content, "index", isEnabled
+            FROM snippets
+            WHERE folderID IN (\(placeholders))
+            ORDER BY "index"
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+
+        for (index, id) in folderIDs.enumerated() {
+            SQLiteStore.bindText(statement!, index: index + 1, value: id.uuidString)
+        }
+
         var snippets = [Snippet]()
         while sqlite3_step(statement) == SQLITE_ROW {
             snippets.append(parseSnippet(statement!))

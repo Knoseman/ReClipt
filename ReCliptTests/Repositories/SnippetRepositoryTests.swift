@@ -206,4 +206,40 @@ struct SnippetRepositoryTests {
             #expect(detail.snippets[0].folderID == detail.folder.id)
         }
     }
+
+    @Test
+    func searchFolderDetailsUsesFullTextIndexAndTracksChanges() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = SnippetRepository()
+            let commonFolder = try #require(repository.insertFolder())
+            repository.updateFolderTitle(commonFolder.id, title: "Common")
+            let commonSnippet = try #require(repository.insertSnippet(to: commonFolder.id))
+            repository.updateSnippetTitle(commonSnippet.id, title: "Email")
+            repository.updateSnippetContent(commonSnippet.id, content: "hello@example.com")
+
+            let workFolder = try #require(repository.insertFolder())
+            repository.updateFolderTitle(workFolder.id, title: "Work")
+            let deploySnippet = try #require(repository.insertSnippet(to: workFolder.id))
+            repository.updateSnippetTitle(deploySnippet.id, title: "Deploy")
+            repository.updateSnippetContent(deploySnippet.id, content: "needle token")
+            let notesSnippet = try #require(repository.insertSnippet(to: workFolder.id))
+            repository.updateSnippetTitle(notesSnippet.id, title: "Notes")
+            repository.updateSnippetContent(notesSnippet.id, content: "general")
+
+            let snippetMatches = repository.searchFolderDetails(query: "need")
+            #expect(snippetMatches.map(\.folder.id) == [workFolder.id])
+            #expect(snippetMatches.first?.snippets.map(\.id) == [deploySnippet.id])
+
+            let folderMatches = repository.searchFolderDetails(query: "common")
+            #expect(folderMatches.map(\.folder.id) == [commonFolder.id])
+            #expect(folderMatches.first?.snippets.map(\.id) == [commonSnippet.id])
+
+            repository.updateSnippetContent(deploySnippet.id, content: "changed token")
+            #expect(repository.searchFolderDetails(query: "need").isEmpty)
+            #expect(repository.searchFolderDetails(query: "changed").first?.snippets.map(\.id) == [deploySnippet.id])
+
+            repository.deleteFolder(commonFolder.id)
+            #expect(repository.searchFolderDetails(query: "common").isEmpty)
+        }
+    }
 }

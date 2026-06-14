@@ -114,6 +114,10 @@ final class SQLiteStore {
             try createSchemaV1(database)
             try setUserVersion(database, version: 1)
         }
+        if version < 2 {
+            try createSearchSchemaV2(database)
+            try setUserVersion(database, version: 2)
+        }
     }
 
     private func createSchemaV1(_ database: OpaquePointer) throws {
@@ -195,6 +199,112 @@ final class SQLiteStore {
         """)
     }
 
+    private func createSearchSchemaV2(_ database: OpaquePointer) throws {
+        try execute(database, sql: """
+            CREATE VIRTUAL TABLE IF NOT EXISTS "pasteboardHistorySearch"
+            USING fts5("id" UNINDEXED, "title", tokenize = 'unicode61')
+        """)
+        try execute(database, sql: """
+            CREATE VIRTUAL TABLE IF NOT EXISTS "snippetFolderSearch"
+            USING fts5("id" UNINDEXED, "title", tokenize = 'unicode61')
+        """)
+        try execute(database, sql: """
+            CREATE VIRTUAL TABLE IF NOT EXISTS "snippetSearch"
+            USING fts5("id" UNINDEXED, "folderID" UNINDEXED, "title", "content", tokenize = 'unicode61')
+        """)
+
+        try execute(database, sql: """
+            INSERT INTO "pasteboardHistorySearch" ("id", "title")
+            SELECT "id", "title" FROM "pasteboardHistories"
+            WHERE "id" NOT IN (SELECT "id" FROM "pasteboardHistorySearch")
+        """)
+        try execute(database, sql: """
+            INSERT INTO "snippetFolderSearch" ("id", "title")
+            SELECT "id", "title" FROM "snippetFolders"
+            WHERE "id" NOT IN (SELECT "id" FROM "snippetFolderSearch")
+        """)
+        try execute(database, sql: """
+            INSERT INTO "snippetSearch" ("id", "folderID", "title", "content")
+            SELECT "id", "folderID", "title", "content" FROM "snippets"
+            WHERE "id" NOT IN (SELECT "id" FROM "snippetSearch")
+        """)
+
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "pasteboardHistories_ai"
+            AFTER INSERT ON "pasteboardHistories"
+            BEGIN
+                INSERT INTO "pasteboardHistorySearch" ("id", "title")
+                VALUES (new."id", new."title");
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "pasteboardHistories_ad"
+            AFTER DELETE ON "pasteboardHistories"
+            BEGIN
+                DELETE FROM "pasteboardHistorySearch" WHERE "id" = old."id";
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "pasteboardHistories_au"
+            AFTER UPDATE ON "pasteboardHistories"
+            BEGIN
+                DELETE FROM "pasteboardHistorySearch" WHERE "id" = old."id";
+                INSERT INTO "pasteboardHistorySearch" ("id", "title")
+                VALUES (new."id", new."title");
+            END
+        """)
+
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippetFolders_ai"
+            AFTER INSERT ON "snippetFolders"
+            BEGIN
+                INSERT INTO "snippetFolderSearch" ("id", "title")
+                VALUES (new."id", new."title");
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippetFolders_ad"
+            AFTER DELETE ON "snippetFolders"
+            BEGIN
+                DELETE FROM "snippetFolderSearch" WHERE "id" = old."id";
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippetFolders_au"
+            AFTER UPDATE ON "snippetFolders"
+            BEGIN
+                DELETE FROM "snippetFolderSearch" WHERE "id" = old."id";
+                INSERT INTO "snippetFolderSearch" ("id", "title")
+                VALUES (new."id", new."title");
+            END
+        """)
+
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippets_ai"
+            AFTER INSERT ON "snippets"
+            BEGIN
+                INSERT INTO "snippetSearch" ("id", "folderID", "title", "content")
+                VALUES (new."id", new."folderID", new."title", new."content");
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippets_ad"
+            AFTER DELETE ON "snippets"
+            BEGIN
+                DELETE FROM "snippetSearch" WHERE "id" = old."id";
+            END
+        """)
+        try execute(database, sql: """
+            CREATE TRIGGER IF NOT EXISTS "snippets_au"
+            AFTER UPDATE ON "snippets"
+            BEGIN
+                DELETE FROM "snippetSearch" WHERE "id" = old."id";
+                INSERT INTO "snippetSearch" ("id", "folderID", "title", "content")
+                VALUES (new."id", new."folderID", new."title", new."content");
+            END
+        """)
+    }
+
     // MARK: - Helpers
 
     private func databasePath() throws -> String {
@@ -248,6 +358,19 @@ final class SQLiteStore {
 // MARK: - Query Helpers
 
 extension SQLiteStore {
+    static func ftsMatchQuery(_ query: String) -> String {
+        let sanitizedScalars = query.unicodeScalars.map { scalar -> Character in
+            CharacterSet.alphanumerics.contains(scalar) ? Character(scalar) : " "
+        }
+        let tokens = String(sanitizedScalars)
+            .split(whereSeparator: \.isWhitespace)
+            .map(String.init)
+
+        return tokens
+            .map { "\($0)*" }
+            .joined(separator: " AND ")
+    }
+
     static func bindText(_ statement: OpaquePointer, index: Int, value: String) {
         sqlite3_bind_text(statement, Int32(index), value, -1, sqliteTransient)
     }

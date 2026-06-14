@@ -463,6 +463,23 @@ private final class FakeSnippetRepository: SnippetRepositoryProtocol {
         folderDetails
     }
 
+    func searchFolderDetails(query: String) -> [SnippetFolderDetail] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalizedQuery.isEmpty else { return folderDetails }
+
+        return folderDetails.compactMap { detail in
+            if detail.folder.title.lowercased().contains(normalizedQuery) {
+                return detail
+            }
+            let matchingSnippets = detail.snippets.filter { snippet in
+                snippet.title.lowercased().contains(normalizedQuery) ||
+                    snippet.content.lowercased().contains(normalizedQuery)
+            }
+            guard !matchingSnippets.isEmpty else { return nil }
+            return SnippetFolderDetail(folder: detail.folder, snippets: matchingSnippets)
+        }
+    }
+
     func fetchFolderDetail(id: SnippetFolder.ID) -> SnippetFolderDetail? {
         folderDetails.first { $0.folder.id == id }
     }

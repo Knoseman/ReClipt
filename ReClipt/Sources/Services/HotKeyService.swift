@@ -111,8 +111,7 @@ final class HotKeyService: NSObject {
 
     private func savedKeyCombo(forKey key: String) -> KeyCombo? {
         guard let data = AppEnvironment.current.defaults.object(forKey: key) as? Data else { return nil }
-        guard let keyCombo = NSKeyedUnarchiver.unarchiveObject(with: data) as? KeyCombo else { return nil }
-        return keyCombo
+        return try? NSKeyedUnarchiver.unarchivedObject(ofClass: KeyCombo.self, from: data)
     }
 }
 
@@ -244,11 +243,17 @@ extension HotKeyService {
     private var folderKeyCombos: [String: KeyCombo]? {
         get {
             guard let data = AppEnvironment.current.defaults.object(forKey: Constants.HotKey.folderKeyCombos) as? Data else { return nil }
-            return NSKeyedUnarchiver.unarchiveObject(with: data) as? [String: KeyCombo]
+            return try? NSKeyedUnarchiver.unarchivedObject(
+                ofClasses: [NSDictionary.self, NSString.self, KeyCombo.self],
+                from: data
+            ) as? [String: KeyCombo]
         }
         set {
             if let value = newValue {
-                AppEnvironment.current.defaults.set(NSKeyedArchiver.archivedData(withRootObject: value), forKey: Constants.HotKey.folderKeyCombos)
+                AppEnvironment.current.defaults.set(
+                    try? NSKeyedArchiver.archivedData(withRootObject: value, requiringSecureCoding: true),
+                    forKey: Constants.HotKey.folderKeyCombos
+                )
             } else {
                 AppEnvironment.current.defaults.removeObject(forKey: Constants.HotKey.folderKeyCombos)
             }
@@ -304,7 +309,9 @@ extension HotKeyService {
 
 // MARK: - KeyCombo (Minimal replacement for Magnet's KeyCombo)
 
-final class KeyCombo: NSObject, NSCoding {
+final class KeyCombo: NSObject, NSSecureCoding {
+    static let supportsSecureCoding = true
+
     let QWERTYKeyCode: Int
     let modifiers: Int
 

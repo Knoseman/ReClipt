@@ -440,9 +440,9 @@ private extension MenuManager {
         image?.isTemplate = type == .black
 
         statusItem = NSStatusBar.system.statusItem(withLength: -1)
-        statusItem?.image = image
-        statusItem?.highlightMode = true
-        statusItem?.toolTip = "\(Constants.Application.name)\(Bundle.main.appVersion ?? "")"
+        statusItem?.button?.image = image
+        (statusItem?.button?.cell as? NSButtonCell)?.highlightsBy = .contentsCellMask
+        statusItem?.button?.toolTip = "\(Constants.Application.name)\(Bundle.main.appVersion ?? "")"
         statusItem?.menu = mainMenu
     }
 

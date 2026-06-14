@@ -22,6 +22,13 @@ protocol PasteboardHistoryRepositoryProtocol {
         limit: Int,
         offset: Int
     ) -> [PasteboardHistoryDetail]
+    func searchHistoryDetails(
+        query: String,
+        ascending: Bool,
+        includesThumbnailAsset: Bool,
+        limit: Int,
+        offset: Int
+    ) -> [PasteboardHistoryDetail]
     func fetchHistory(id: PasteboardHistory.ID) -> PasteboardHistory?
     func fetchContent(id: PasteboardHistory.ID) -> PasteboardContent?
 
@@ -120,6 +127,62 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
         }
     }
 
+    func searchHistoryDetails(
+        query: String,
+        ascending: Bool,
+        includesThumbnailAsset: Bool,
+        limit: Int,
+        offset: Int = 0
+    ) -> [PasteboardHistoryDetail] {
+        let matchQuery = SQLiteStore.ftsMatchQuery(query)
+        guard !matchQuery.isEmpty else {
+            return fetchHistoryDetails(
+                ascending: ascending,
+                includesThumbnailAsset: includesThumbnailAsset,
+                limit: limit,
+                offset: offset
+            )
+        }
+
+        do {
+            return try store.read { database in
+                let order = ascending ? "ASC" : "DESC"
+                let sql = """
+                    SELECT h.id, h.title, h.pasteboardTypes, h.deviceID, h.updateAt
+                    FROM pasteboardHistories h
+                    INNER JOIN pasteboardHistorySearch ON pasteboardHistorySearch.id = h.id
+                    WHERE pasteboardHistorySearch MATCH ?
+                    ORDER BY h.updateAt \(order)
+                    LIMIT ? OFFSET ?
+                """
+                var statement: OpaquePointer?
+                guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+                    return []
+                }
+                defer { sqlite3_finalize(statement) }
+                SQLiteStore.bindText(statement!, index: 1, value: matchQuery)
+                SQLiteStore.bindInt(statement!, index: 2, value: limit)
+                SQLiteStore.bindInt(statement!, index: 3, value: offset)
+
+                var histories = [PasteboardHistory]()
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    histories.append(parseHistory(statement!))
+                }
+
+                guard includesThumbnailAsset else {
+                    return histories.map { PasteboardHistoryDetail(history: $0, thumbnailAsset: nil) }
+                }
+
+                return histories.map { history in
+                    let thumbnail = fetchThumbnailAsset(database: database, historyID: history.id)
+                    return PasteboardHistoryDetail(history: history, thumbnailAsset: thumbnail)
+                }
+            }
+        } catch {
+            return []
+        }
+    }
+
     func fetchHistory(id: PasteboardHistory.ID) -> PasteboardHistory? {
         do {
             return try store.read { database in
@@ -175,8 +238,13 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
                 let exists = sqlite3_step(existsStmt) == SQLITE_ROW
 
                 let historySQL = """
-                    INSERT OR REPLACE INTO pasteboardHistories (id, title, pasteboardTypes, deviceID, updateAt)
+                    INSERT INTO pasteboardHistories (id, title, pasteboardTypes, deviceID, updateAt)
                     VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        title = excluded.title,
+                        pasteboardTypes = excluded.pasteboardTypes,
+                        deviceID = excluded.deviceID,
+                        updateAt = excluded.updateAt
                 """
                 var historyStmt: OpaquePointer?
                 guard sqlite3_prepare_v2(database, historySQL, -1, &historyStmt, nil) == SQLITE_OK else { return }

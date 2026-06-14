@@ -124,6 +124,51 @@ struct PasteboardHistoryRepositoryTests {
     }
 
     @Test
+    func searchHistoryDetailsUsesFullTextIndexAndTracksUpdates() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = PasteboardHistoryRepository()
+            let first = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Alpha token".utf8))])
+            )
+            let second = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Beta needle".utf8))])
+            )
+            let updated = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Beta changed".utf8))])
+            )
+
+            repository.save(id: "alpha", content: first, updateAt: 1000)
+            repository.save(id: "beta", content: second, updateAt: 2000)
+
+            let initialMatches = repository.searchHistoryDetails(
+                query: "need",
+                ascending: false,
+                includesThumbnailAsset: false,
+                limit: 10,
+                offset: 0
+            )
+            #expect(initialMatches.map(\.history.id) == ["beta"])
+
+            repository.save(id: "beta", content: updated, updateAt: 3000)
+
+            #expect(repository.searchHistoryDetails(
+                query: "need",
+                ascending: false,
+                includesThumbnailAsset: false,
+                limit: 10,
+                offset: 0
+            ).isEmpty)
+            #expect(repository.searchHistoryDetails(
+                query: "changed",
+                ascending: false,
+                includesThumbnailAsset: false,
+                limit: 10,
+                offset: 0
+            ).map(\.history.id) == ["beta"])
+        }
+    }
+
+    @Test
     func deleteAllCascadesAssetsAndThumbnails() throws {
         try TestSQLiteStore.withCleanStore {
             let repository = PasteboardHistoryRepository()

@@ -61,7 +61,7 @@ final class HotKeyServiceTests {
     func keyComboArchiving() throws {
         let keyCombo = KeyCombo(QWERTYKeyCode: 9, carbonModifiers: 768)
         let data = keyCombo.archive()
-        let unarchived = try #require(NSKeyedUnarchiver.unarchiveObject(with: data) as? KeyCombo)
+        let unarchived = try #require(try NSKeyedUnarchiver.unarchivedObject(ofClass: KeyCombo.self, from: data))
         #expect(unarchived.QWERTYKeyCode == keyCombo.QWERTYKeyCode)
         #expect(unarchived.modifiers == keyCombo.modifiers)
     }

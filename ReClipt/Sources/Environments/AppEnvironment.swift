@@ -68,7 +68,11 @@ struct AppEnvironment {
 
     static func fromStorage(defaults: UserDefaults = .standard) -> Environment {
         var excludeApplications = [ReCliptAppInfo]()
-        if let data = defaults.object(forKey: Constants.UserDefaults.excludeApplications) as? Data, let applications = NSKeyedUnarchiver.unarchiveObject(with: data) as? [ReCliptAppInfo] {
+        if let data = defaults.object(forKey: Constants.UserDefaults.excludeApplications) as? Data,
+           let applications = try? NSKeyedUnarchiver.unarchivedObject(
+            ofClasses: [NSArray.self, ReCliptAppInfo.self, NSString.self],
+            from: data
+           ) as? [ReCliptAppInfo] {
             excludeApplications = applications
         }
         let excludeAppService = ExcludeAppService(applications: excludeApplications)

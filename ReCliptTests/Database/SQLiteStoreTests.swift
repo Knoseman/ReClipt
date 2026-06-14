@@ -36,7 +36,10 @@ struct SQLiteStoreTests {
                         'pasteboardHistories',
                         'pasteboardHistoryAssets',
                         'pasteboardHistoryThumbnailAssets',
+                        'pasteboardHistorySearch',
+                        'snippetFolderSearch',
                         'snippetFolders',
+                        'snippetSearch',
                         'snippets'
                     )
                     ORDER BY name
@@ -52,13 +55,16 @@ struct SQLiteStoreTests {
                     tables.append(String(cString: sqlite3_column_text(statement, 0)))
                 }
 
-                #expect(tables == [
+                #expect(Set(tables) == Set([
                     "pasteboardHistories",
                     "pasteboardHistoryAssets",
                     "pasteboardHistoryThumbnailAssets",
+                    "pasteboardHistorySearch",
+                    "snippetFolderSearch",
                     "snippetFolders",
+                    "snippetSearch",
                     "snippets"
-                ])
+                ]))
             }
         }
     }
@@ -84,8 +90,15 @@ struct SQLiteStoreTests {
                 return
             }
 
-            #expect(sqlite3_column_int(statement, 0) == 1)
+            #expect(sqlite3_column_int(statement, 0) == 2)
         }
+    }
+
+    @Test
+    func ftsMatchQuerySanitizesSearchText() {
+        #expect(SQLiteStore.ftsMatchQuery("API key") == "API* AND key*")
+        #expect(SQLiteStore.ftsMatchQuery("  deploy:prod! ") == "deploy* AND prod*")
+        #expect(SQLiteStore.ftsMatchQuery("!?") == "")
     }
 
     @Test(.timeLimit(.minutes(1)))
@@ -261,7 +274,10 @@ enum TestSQLiteStore {
                 "DELETE FROM pasteboardHistoryAssets",
                 "DELETE FROM pasteboardHistories",
                 "DELETE FROM snippets",
-                "DELETE FROM snippetFolders"
+                "DELETE FROM snippetFolders",
+                "DELETE FROM pasteboardHistorySearch",
+                "DELETE FROM snippetSearch",
+                "DELETE FROM snippetFolderSearch"
             ] {
                 guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
                     throw SQLiteStoreError.stepFailed(String(cString: sqlite3_errmsg(database)))

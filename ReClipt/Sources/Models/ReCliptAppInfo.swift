@@ -10,7 +10,8 @@
 
 import Cocoa
 
-final class ReCliptAppInfo: NSObject, NSCoding {
+final class ReCliptAppInfo: NSObject, NSSecureCoding {
+    static let supportsSecureCoding = true
 
     // MARK: - Properties
     let identifier: String
@@ -27,8 +28,8 @@ final class ReCliptAppInfo: NSObject, NSCoding {
 
     // MARK: - NSCoding
     init?(coder aDecoder: NSCoder) {
-        guard let identifier = aDecoder.decodeObject(forKey: "identifier") as? String else { return nil }
-        guard let name = aDecoder.decodeObject(forKey: "name") as? String else { return nil }
+        guard let identifier = aDecoder.decodeObject(of: NSString.self, forKey: "identifier") as? String else { return nil }
+        guard let name = aDecoder.decodeObject(of: NSString.self, forKey: "name") as? String else { return nil }
 
         self.identifier = identifier
         self.name = name
