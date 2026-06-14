@@ -13,7 +13,7 @@ import Testing
 @testable import ReClipt
 
 @MainActor
-@Suite
+@Suite(.serialized)
 struct PasteboardContentTests {
     @Test
     func typesAreDerivedFromAssetsInOrder() throws {
@@ -223,6 +223,35 @@ struct PasteboardContentTests {
         let content = PasteboardContent(image: image)
 
         #expect(content?.thumbnailImage?.size == NSSize(width: 8, height: 4))
+    }
+
+    @Test
+    func thumbnailImageFitsBothWidthAndHeightBounds() throws {
+        let defaults = UserDefaults.standard
+        let previousWidth = defaults.object(forKey: Constants.UserDefaults.thumbnailWidth)
+        let previousHeight = defaults.object(forKey: Constants.UserDefaults.thumbnailHeight)
+        defer {
+            if let previousWidth {
+                defaults.set(previousWidth, forKey: Constants.UserDefaults.thumbnailWidth)
+            } else {
+                defaults.removeObject(forKey: Constants.UserDefaults.thumbnailWidth)
+            }
+            if let previousHeight {
+                defaults.set(previousHeight, forKey: Constants.UserDefaults.thumbnailHeight)
+            } else {
+                defaults.removeObject(forKey: Constants.UserDefaults.thumbnailHeight)
+            }
+        }
+        defaults.set(100, forKey: Constants.UserDefaults.thumbnailWidth)
+        defaults.set(32, forKey: Constants.UserDefaults.thumbnailHeight)
+
+        let wideImage = NSImage.create(with: .blue, size: NSSize(width: 1_000, height: 1))
+        let tallImage = NSImage.create(with: .red, size: NSSize(width: 1, height: 1_000))
+        let wideContent = PasteboardContent(image: wideImage)
+        let tallContent = PasteboardContent(image: tallImage)
+
+        #expect(wideContent?.thumbnailImage?.size == NSSize(width: 100, height: 1))
+        #expect(tallContent?.thumbnailImage?.size == NSSize(width: 1, height: 32))
     }
 
     @Test

@@ -534,3 +534,20 @@ private struct HistorySubmenuInfo {
     let offset: Int
     let limit: Int
 }
+
+#if DEBUG
+extension MenuManager {
+    func testBuildMenus() {
+        snippetFolderDetails = snippetRepository.fetchFolderDetails()
+        createMainMenu()
+    }
+
+    var testMainMenu: NSMenu? {
+        mainMenu
+    }
+
+    var testHistoryMenu: NSMenu? {
+        historyMenu
+    }
+}
+#endif

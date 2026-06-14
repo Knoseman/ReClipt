@@ -47,6 +47,7 @@ final class SQLiteStore {
                 throw SQLiteStoreError.openFailed(message)
             }
             db = database
+            try execute(database, sql: "PRAGMA foreign_keys = ON")
             try execute(database, sql: "PRAGMA journal_mode = WAL")
             try migrate(database)
         }

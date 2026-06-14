@@ -53,17 +53,27 @@ struct PasteboardContent: Equatable {
     }
 
     private func createThumbnail(from source: CGImageSource, width: Int, height: Int) -> NSImage? {
+        let maxWidth = CGFloat(width)
+        let maxHeight = CGFloat(height)
+        guard maxWidth > 0, maxHeight > 0 else { return nil }
+
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let pixelWidth = (properties?[kCGImagePropertyPixelWidth] as? NSNumber).map { CGFloat(truncating: $0) }
+        let pixelHeight = (properties?[kCGImagePropertyPixelHeight] as? NSNumber).map { CGFloat(truncating: $0) }
+        let originalSize = NSSize(width: pixelWidth ?? maxWidth, height: pixelHeight ?? maxHeight)
+        let thumbnailSize = originalSize.aspectFit(width: maxWidth, height: maxHeight)
+
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(width, height)
+            kCGImageSourceThumbnailMaxPixelSize: Int(ceil(max(thumbnailSize.width, thumbnailSize.height)))
         ]
 
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
             return nil
         }
 
-        return NSImage(cgImage: cgImage, size: NSSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height)))
+        return NSImage(cgImage: cgImage, size: thumbnailSize)
     }
     var pasteboardItems: [NSPasteboardItem] {
         var countsByType: [NSPasteboard.PasteboardType: Int] = [:]
@@ -121,6 +131,21 @@ struct PasteboardContent: Equatable {
     init?(image: NSImage) {
         guard let data = image.tiffRepresentation else { return nil }
         self.init(assets: [Asset(type: .tiff, data: data)])
+    }
+}
+
+private extension NSSize {
+    func aspectFit(width maxWidth: CGFloat, height maxHeight: CGFloat) -> NSSize {
+        guard width > 0, height > 0 else {
+            return NSSize(width: maxWidth, height: maxHeight)
+        }
+
+        let scale = min(maxWidth / width, maxHeight / height)
+        let ratio = min(scale, 1)
+        return NSSize(
+            width: max(1, floor(width * ratio)),
+            height: max(1, floor(height * ratio))
+        )
     }
 }
 
