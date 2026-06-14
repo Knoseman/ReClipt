@@ -18,6 +18,7 @@
 		C57100072FCEB02000C8F965 /* PasteboardContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57100062FCEB02000C8F965 /* PasteboardContent.swift */; };
 		C571000A2FCEB03000C8F965 /* PasteboardContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C571000B2FCEB03000C8F965 /* PasteboardContentTests.swift */; };
 		C57100112FCEB45000C8F965 /* NSImage+ResizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */; };
+		C58A00022FD5000000ABC001 /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00012FD5000000ABC001 /* AppEnvironmentTests.swift */; };
 		C5AA11012FD1000000ABC001 /* SnippetTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */; };
 		C5AA11032FD1000000ABC001 /* SnippetTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */; };
 		C5B100022FD2000000ABC001 /* PreferencesWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */; };
@@ -96,6 +97,7 @@
 		C57100062FCEB02000C8F965 /* PasteboardContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardContent.swift; sourceTree = "<group>"; };
 		C571000B2FCEB03000C8F965 /* PasteboardContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardContentTests.swift; sourceTree = "<group>"; };
 		C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSImage+ResizeTests.swift"; sourceTree = "<group>"; };
+		C58A00012FD5000000ABC001 /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransfer.swift; sourceTree = "<group>"; };
 		C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransferTests.swift; sourceTree = "<group>"; };
 		C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowControllerTests.swift; sourceTree = "<group>"; };
@@ -250,6 +252,14 @@
 				C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */,
 			);
 			path = Extensions;
+			sourceTree = "<group>";
+		};
+		C58A00002FD5000000ABC001 /* Environments */ = {
+			isa = PBXGroup;
+			children = (
+				C58A00012FD5000000ABC001 /* AppEnvironmentTests.swift */,
+			);
+			path = Environments;
 			sourceTree = "<group>";
 		};
 		C5AA11042FD1000000ABC001 /* Snippets */ = {
@@ -504,6 +514,7 @@
 			isa = PBXGroup;
 			children = (
 				C5700B472FC5C0DB00C8F965 /* Database */,
+				C58A00002FD5000000ABC001 /* Environments */,
 				C571000D2FCEB44000C8F965 /* Extensions */,
 				C571000C2FCEB03000C8F965 /* Models */,
 				C5B100002FD2000000ABC001 /* Preferences */,
@@ -686,6 +697,7 @@
 				C571000A2FCEB03000C8F965 /* PasteboardContentTests.swift in Sources */,
 				C57100112FCEB45000C8F965 /* NSImage+ResizeTests.swift in Sources */,
 				C57100052FCEB01000C8F965 /* PasteboardHistoryRepositoryTests.swift in Sources */,
+				C58A00022FD5000000ABC001 /* AppEnvironmentTests.swift in Sources */,
 				C522FB992FCC019100E61800 /* PasteboardAvailableTypeTests.swift in Sources */,
 				C5B100022FD2000000ABC001 /* PreferencesWindowControllerTests.swift in Sources */,
 				C57100012FCAE00000C8F965 /* SnippetRepositoryTests.swift in Sources */,
