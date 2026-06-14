@@ -169,22 +169,16 @@ struct PasteboardHistoryRepositoryTests {
     @Test
     func menuManagerLazyLoadsHistorySubmenusOnce() throws {
         try TestSQLiteStore.withCleanStore {
-            let defaults = try #require(UserDefaults(suiteName: "MenuManagerLazyLoadsHistorySubmenusOnce"))
-            defaults.removePersistentDomain(forName: "MenuManagerLazyLoadsHistorySubmenusOnce")
-            defaults.set(2, forKey: Constants.UserDefaults.numberOfItemsPlaceInline)
-            defaults.set(2, forKey: Constants.UserDefaults.numberOfItemsPlaceInsideFolder)
-            defaults.set(10, forKey: Constants.UserDefaults.maxHistorySize)
-            defaults.set(20, forKey: Constants.UserDefaults.maxMenuItemTitleLength)
-            defaults.set(false, forKey: Constants.UserDefaults.reorderClipsAfterPasting)
-            defaults.set(false, forKey: Constants.UserDefaults.showIconInTheMenu)
-            defaults.set(false, forKey: Constants.UserDefaults.menuItemsAreMarkedWithNumbers)
-            defaults.set(false, forKey: Constants.UserDefaults.addNumericKeyEquivalents)
-            defaults.set(false, forKey: Constants.UserDefaults.showToolTipOnMenuItem)
-            AppEnvironment.push(defaults: defaults)
-            defer {
-                _ = AppEnvironment.popLast()
-                defaults.removePersistentDomain(forName: "MenuManagerLazyLoadsHistorySubmenusOnce")
-            }
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuManagerLazyLoadsHistorySubmenusOnce",
+                inlineItems: 2,
+                itemsPerFolder: 2,
+                maxHistorySize: 10,
+                showIcons: false,
+                showNumbers: false,
+                enableNumericShortcuts: false
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuManagerLazyLoadsHistorySubmenusOnce") }
 
             let repository = PasteboardHistoryRepository()
             for index in 0..<5 {
@@ -211,5 +205,143 @@ struct PasteboardHistoryRepositoryTests {
 
             #expect(firstFolderMenu.items.map(\.title) == ["Lazy 2", "Lazy 3"])
         }
+    }
+
+    @Test
+    func menuManagerHonorsNumberAndShortcutSettings() throws {
+        try TestSQLiteStore.withCleanStore {
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuManagerHonorsNumberAndShortcutSettings",
+                inlineItems: 3,
+                itemsPerFolder: 10,
+                maxHistorySize: 10,
+                showIcons: false,
+                showNumbers: true,
+                enableNumericShortcuts: true
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuManagerHonorsNumberAndShortcutSettings") }
+
+            try saveHistories(titles: ["One", "Two", "Three"])
+
+            let menuManager = MenuManager()
+            menuManager.testBuildMenus()
+
+            let historyItems = try historyItems(in: #require(menuManager.testMainMenu))
+            #expect(historyItems.map(\.title) == ["1. One", "2. Two", "3. Three"])
+            #expect(historyItems.map(\.keyEquivalent) == ["1", "2", "3"])
+        }
+    }
+
+    @Test
+    func menuManagerHonorsHiddenNumbersAndDisabledShortcuts() throws {
+        try TestSQLiteStore.withCleanStore {
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuManagerHonorsHiddenNumbersAndDisabledShortcuts",
+                inlineItems: 2,
+                itemsPerFolder: 10,
+                maxHistorySize: 10,
+                showIcons: false,
+                showNumbers: false,
+                enableNumericShortcuts: false
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuManagerHonorsHiddenNumbersAndDisabledShortcuts") }
+
+            try saveHistories(titles: ["Alpha", "Beta"])
+
+            let menuManager = MenuManager()
+            menuManager.testBuildMenus()
+
+            let historyItems = try historyItems(in: #require(menuManager.testMainMenu))
+            #expect(historyItems.map(\.title) == ["Alpha", "Beta"])
+            #expect(historyItems.map(\.keyEquivalent) == ["", ""])
+        }
+    }
+
+    @Test
+    func menuManagerHonorsIconVisibilityForHistoryFoldersAndSnippets() throws {
+        try TestSQLiteStore.withCleanStore {
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuManagerHonorsIconVisibilityForHistoryFoldersAndSnippets",
+                inlineItems: 0,
+                itemsPerFolder: 2,
+                maxHistorySize: 10,
+                showIcons: true,
+                showNumbers: false,
+                enableNumericShortcuts: false
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuManagerHonorsIconVisibilityForHistoryFoldersAndSnippets") }
+
+            try saveHistories(titles: ["Foldered One", "Foldered Two", "Foldered Three"])
+            let snippetRepository = SnippetRepository()
+            let folder = try #require(snippetRepository.insertFolder())
+            snippetRepository.updateFolderTitle(folder.id, title: "Snippets")
+            let snippet = try #require(snippetRepository.insertSnippet(to: folder.id))
+            snippetRepository.updateSnippetTitle(snippet.id, title: "Snippet One")
+
+            let menuManager = MenuManager()
+            menuManager.testBuildMenus()
+
+            let mainMenu = try #require(menuManager.testMainMenu)
+            let historyFolderItem = try #require(mainMenu.items.first { $0.title == "1 - 2" })
+            let snippetFolderItem = try #require(mainMenu.items.first { $0.title == "Snippets" })
+            let snippetItem = try #require(snippetFolderItem.submenu?.items.first { $0.title == "Snippet One" })
+
+            #expect(historyFolderItem.image != nil)
+            #expect(snippetFolderItem.image != nil)
+            #expect(snippetItem.image != nil)
+        }
+    }
+}
+
+private extension PasteboardHistoryRepositoryTests {
+    func pushMenuTestEnvironment(
+        suiteName: String,
+        inlineItems: Int,
+        itemsPerFolder: Int,
+        maxHistorySize: Int,
+        showIcons: Bool,
+        showNumbers: Bool,
+        enableNumericShortcuts: Bool
+    ) throws -> UserDefaults {
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defaults.set(inlineItems, forKey: Constants.UserDefaults.numberOfItemsPlaceInline)
+        defaults.set(itemsPerFolder, forKey: Constants.UserDefaults.numberOfItemsPlaceInsideFolder)
+        defaults.set(maxHistorySize, forKey: Constants.UserDefaults.maxHistorySize)
+        defaults.set(20, forKey: Constants.UserDefaults.maxMenuItemTitleLength)
+        defaults.set(false, forKey: Constants.UserDefaults.reorderClipsAfterPasting)
+        defaults.set(showIcons, forKey: Constants.UserDefaults.showIconInTheMenu)
+        defaults.set(false, forKey: Constants.UserDefaults.showImageInTheMenu)
+        defaults.set(false, forKey: Constants.UserDefaults.showColorPreviewInTheMenu)
+        defaults.set(showNumbers, forKey: Constants.UserDefaults.menuItemsAreMarkedWithNumbers)
+        defaults.set(false, forKey: Constants.UserDefaults.menuItemsTitleStartWithZero)
+        defaults.set(enableNumericShortcuts, forKey: Constants.UserDefaults.addNumericKeyEquivalents)
+        defaults.set(false, forKey: Constants.UserDefaults.showToolTipOnMenuItem)
+        defaults.set(true, forKey: Constants.UserDefaults.addClearHistoryMenuItem)
+        AppEnvironment.push(defaults: defaults)
+        return defaults
+    }
+
+    func popMenuTestEnvironment(_ defaults: UserDefaults, suiteName: String) {
+        _ = AppEnvironment.popLast()
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    func saveHistories(titles: [String]) throws {
+        let repository = PasteboardHistoryRepository()
+        for (index, title) in titles.enumerated() {
+            let content = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data(title.utf8))])
+            )
+            repository.save(id: "menu-\(index)", content: content, updateAt: 1000 + index)
+        }
+    }
+
+    func historyItems(in menu: NSMenu) throws -> [NSMenuItem] {
+        let historyLabelIndex = try #require(menu.items.firstIndex { $0.title == String(localized: "History") })
+        let firstNonHistoryIndex = menu.items[(historyLabelIndex + 1)...].firstIndex { item in
+            item.isSeparatorItem || item.submenu != nil || item.action != #selector(AppDelegate.selectHistoryMenuItem(_:))
+        } ?? menu.numberOfItems
+        return Array(menu.items[(historyLabelIndex + 1)..<firstNonHistoryIndex])
     }
 }
