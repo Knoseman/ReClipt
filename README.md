@@ -62,6 +62,17 @@ After `./scripts/validate.sh` succeeds, launch the built app:
 open build/Build/Products/Release/ReClipt.app
 ```
 
+For a quick automated app-level smoke test, run:
+
+```bash
+./scripts/smoke-app.sh
+```
+
+This verifies the built app bundle, confirms ReClipt is configured as a menu bar
+app without a Dock icon, launches it, checks that it remains running briefly,
+then quits it. It intentionally quits any already-running ReClipt instance first
+so each run starts from a fresh app process.
+
 Check these app-level behaviors manually:
 
 - ReClipt launches without a Dock icon.
