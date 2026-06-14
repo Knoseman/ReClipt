@@ -19,6 +19,10 @@
 		C571000A2FCEB03000C8F965 /* PasteboardContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C571000B2FCEB03000C8F965 /* PasteboardContentTests.swift */; };
 		C57100112FCEB45000C8F965 /* NSImage+ResizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */; };
 		C58A00022FD5000000ABC001 /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00012FD5000000ABC001 /* AppEnvironmentTests.swift */; };
+		C58A00122FD5100000ABC001 /* GeneralExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00112FD5100000ABC001 /* GeneralExtensionTests.swift */; };
+		C58A00142FD5100000ABC001 /* ReCliptAppInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00132FD5100000ABC001 /* ReCliptAppInfoTests.swift */; };
+		C58A00162FD5100000ABC001 /* MenuTypeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00152FD5100000ABC001 /* MenuTypeTests.swift */; };
+		C58A00182FD5100000ABC001 /* PasteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58A00172FD5100000ABC001 /* PasteServiceTests.swift */; };
 		C5AA11012FD1000000ABC001 /* SnippetTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */; };
 		C5AA11032FD1000000ABC001 /* SnippetTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */; };
 		C5B100022FD2000000ABC001 /* PreferencesWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */; };
@@ -98,6 +102,10 @@
 		C571000B2FCEB03000C8F965 /* PasteboardContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardContentTests.swift; sourceTree = "<group>"; };
 		C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSImage+ResizeTests.swift"; sourceTree = "<group>"; };
 		C58A00012FD5000000ABC001 /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
+		C58A00112FD5100000ABC001 /* GeneralExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralExtensionTests.swift; sourceTree = "<group>"; };
+		C58A00132FD5100000ABC001 /* ReCliptAppInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReCliptAppInfoTests.swift; sourceTree = "<group>"; };
+		C58A00152FD5100000ABC001 /* MenuTypeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuTypeTests.swift; sourceTree = "<group>"; };
+		C58A00172FD5100000ABC001 /* PasteServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteServiceTests.swift; sourceTree = "<group>"; };
 		C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransfer.swift; sourceTree = "<group>"; };
 		C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransferTests.swift; sourceTree = "<group>"; };
 		C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowControllerTests.swift; sourceTree = "<group>"; };
@@ -242,6 +250,7 @@
 			children = (
 				C522FB982FCC019100E61800 /* PasteboardAvailableTypeTests.swift */,
 				C571000B2FCEB03000C8F965 /* PasteboardContentTests.swift */,
+				C58A00132FD5100000ABC001 /* ReCliptAppInfoTests.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -249,6 +258,7 @@
 		C571000D2FCEB44000C8F965 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				C58A00112FD5100000ABC001 /* GeneralExtensionTests.swift */,
 				C57100102FCEB45000C8F965 /* NSImage+ResizeTests.swift */,
 			);
 			path = Extensions;
@@ -521,6 +531,8 @@
 				C5700B4F2FC5C8C800C8F965 /* Repositories */,
 				C5AA11042FD1000000ABC001 /* Snippets */,
 				FA08EDF71D1FED7D000D1D13 /* HotKeyServiceTests.swift */,
+				C58A00152FD5100000ABC001 /* MenuTypeTests.swift */,
+				C58A00172FD5100000ABC001 /* PasteServiceTests.swift */,
 				FA6167931D3ACCB90049FA14 /* DraggedDataTests.swift */,
 				FAC43DDC1B35D8B100C06102 /* Supporting Files */,
 			);
@@ -695,11 +707,15 @@
 								FA08EDF81D1FED7D000D1D13 /* HotKeyServiceTests.swift in Sources */,
 				FA6167941D3ACCB90049FA14 /* DraggedDataTests.swift in Sources */,
 				C571000A2FCEB03000C8F965 /* PasteboardContentTests.swift in Sources */,
+				C58A00122FD5100000ABC001 /* GeneralExtensionTests.swift in Sources */,
 				C57100112FCEB45000C8F965 /* NSImage+ResizeTests.swift in Sources */,
 				C57100052FCEB01000C8F965 /* PasteboardHistoryRepositoryTests.swift in Sources */,
 				C58A00022FD5000000ABC001 /* AppEnvironmentTests.swift in Sources */,
 				C522FB992FCC019100E61800 /* PasteboardAvailableTypeTests.swift in Sources */,
+				C58A00142FD5100000ABC001 /* ReCliptAppInfoTests.swift in Sources */,
 				C5B100022FD2000000ABC001 /* PreferencesWindowControllerTests.swift in Sources */,
+				C58A00162FD5100000ABC001 /* MenuTypeTests.swift in Sources */,
+				C58A00182FD5100000ABC001 /* PasteServiceTests.swift in Sources */,
 				C57100012FCAE00000C8F965 /* SnippetRepositoryTests.swift in Sources */,
 				C5C200022FD3000000ABC001 /* SnippetsEditorWindowControllerTests.swift in Sources */,
 				C5AA11032FD1000000ABC001 /* SnippetTransferTests.swift in Sources */,

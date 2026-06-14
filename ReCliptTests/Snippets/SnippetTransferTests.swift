@@ -127,4 +127,61 @@ struct SnippetTransferTests {
         #expect(folders[0].snippets[0].title == "Phone")
         #expect(folders[0].snippets[0].content == "+46 76 881 25 20")
     }
+
+    @Test
+    func importsXMLWithCDATAAndFlexibleEnabledValues() throws {
+        let xml = """
+        <folders>
+            <folder enabled="yes">
+                <title>Shell</title>
+                <snippets>
+                    <snippet enabled="0">
+                        <title>Multiline</title>
+                        <content><![CDATA[echo "one"
+        echo "two"]]></content>
+                    </snippet>
+                </snippets>
+            </folder>
+            <folder enabled="no">
+                <title>Disabled</title>
+                <snippets />
+            </folder>
+        </folders>
+        """
+
+        let folders = try SnippetTransfer.importFolders(from: Data(xml.utf8), fileExtension: "XML")
+
+        #expect(folders.count == 2)
+        #expect(folders[0].isEnabled)
+        #expect(!folders[0].snippets[0].isEnabled)
+        #expect(folders[0].snippets[0].content == "echo \"one\"\necho \"two\"")
+        #expect(!folders[1].isEnabled)
+    }
+
+    @Test
+    func importsXMLWhenExtensionIsUnknownBeforeFallingBackToPlist() throws {
+        let xml = """
+        <folders>
+            <folder>
+                <title>Fallback</title>
+                <snippets />
+            </folder>
+        </folders>
+        """
+
+        let folders = try SnippetTransfer.importFolders(from: Data(xml.utf8), fileExtension: "backup")
+
+        #expect(folders.map(\.title) == ["Fallback"])
+    }
+
+    @Test
+    func importRejectsEmptyDocumentsAndInvalidData() {
+        #expect(throws: SnippetTransfer.TransferError.emptyDocument) {
+            try SnippetTransfer.importFolders(from: Data("<folders />".utf8), fileExtension: "xml")
+        }
+
+        #expect(throws: (any Error).self) {
+            try SnippetTransfer.importFolders(from: Data("not snippets".utf8), fileExtension: "backup")
+        }
+    }
 }

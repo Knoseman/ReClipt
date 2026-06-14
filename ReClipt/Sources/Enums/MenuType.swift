@@ -13,7 +13,7 @@ import Foundation
 enum MenuType: String {
     case main       = "ReCliptMenu"
     case history    = "HistoryMenu"
-    case snippet    = "SnippetMenu"
+    case snippet    = "SnippetsMenu"
 
     var userDefaultsKey: String {
         switch self {

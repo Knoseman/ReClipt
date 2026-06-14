@@ -12,9 +12,14 @@ import Foundation
 
 extension String {
     subscript (range: CountableClosedRange<Int>) -> String {
-        let startIndex = self.index(self.startIndex, offsetBy: range.lowerBound, limitedBy: self.endIndex) ?? self.startIndex
-        let endIndex = self.index(self.startIndex, offsetBy: range.upperBound, limitedBy: self.endIndex) ?? self.endIndex
+        guard !isEmpty else { return "" }
 
-        return String(self[startIndex..<endIndex])
+        let lowerBound = max(0, range.lowerBound)
+        let upperBound = min(count - 1, range.upperBound)
+        guard lowerBound <= upperBound else { return "" }
+
+        let startIndex = index(self.startIndex, offsetBy: lowerBound)
+        let endIndex = index(self.startIndex, offsetBy: upperBound)
+        return String(self[startIndex...endIndex])
     }
 }

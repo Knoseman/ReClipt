@@ -51,6 +51,33 @@ final class HotKeyServiceTests {
     }
 
     @Test
+    func migratesLegacyHotKeyDictionaryIntoArchivedKeyCombos() throws {
+        let suiteName = "MigratesLegacyHotKeyDictionaryIntoArchivedKeyCombos"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        defaults.set([
+            Constants.Menu.clip: ["keyCode": 10, "modifiers": 768],
+            Constants.Menu.history: ["keyCode": 11, "modifiers": 4352],
+            Constants.Menu.snippet: ["keyCode": 12, "modifiers": 512]
+        ], forKey: Constants.UserDefaults.hotKeys)
+
+        AppEnvironment.push(defaults: defaults)
+        defer { _ = AppEnvironment.popLast() }
+
+        HotKeyService().setupDefaultHotKeys()
+
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.mainKeyCombo)?.QWERTYKeyCode == 10)
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.mainKeyCombo)?.modifiers == 768)
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.historyKeyCombo)?.QWERTYKeyCode == 11)
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.historyKeyCombo)?.modifiers == 4352)
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.snippetKeyCombo)?.QWERTYKeyCode == 12)
+        #expect(try archivedKeyCombo(defaults, Constants.HotKey.snippetKeyCombo)?.modifiers == 512)
+        #expect(defaults.bool(forKey: Constants.HotKey.migrateNewKeyCombo))
+    }
+
+    @Test
     func keyComboCreation() throws {
         let keyCombo = KeyCombo(QWERTYKeyCode: 9, carbonModifiers: 768)
         #expect(keyCombo.QWERTYKeyCode == 9)
@@ -64,5 +91,10 @@ final class HotKeyServiceTests {
         let unarchived = try #require(try NSKeyedUnarchiver.unarchivedObject(ofClass: KeyCombo.self, from: data))
         #expect(unarchived.QWERTYKeyCode == keyCombo.QWERTYKeyCode)
         #expect(unarchived.modifiers == keyCombo.modifiers)
+    }
+
+    private func archivedKeyCombo(_ defaults: UserDefaults, _ key: String) throws -> KeyCombo? {
+        guard let data = defaults.object(forKey: key) as? Data else { return nil }
+        return try NSKeyedUnarchiver.unarchivedObject(ofClass: KeyCombo.self, from: data)
     }
 }
