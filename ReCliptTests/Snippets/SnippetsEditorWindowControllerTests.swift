@@ -76,19 +76,23 @@ struct SnippetsEditorWindowControllerTests {
     }
 
     @Test
-    func searchFiltersFoldersAndSnippets() throws {
+    func searchUsesRepositorySearchResults() throws {
         let repository = FakeSnippetRepository(folderDetails: [
             folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")]),
-            folderDetail(title: "Work", snippets: [snippet(title: "Deploy", content: "needle-value")])
+            folderDetail(title: "Work", snippets: [snippet(title: "Deploy", content: "not loaded by local filtering")])
         ])
+        repository.searchResults["need"] = [
+            folderDetail(title: "Work", snippets: [snippet(title: "Deploy", content: "repository result")])
+        ]
         let controller = makeController(repository: repository)
         let view = try #require(controller.window?.contentView)
         let outlineView = try editorOutlineView(in: view)
         let searchField = try editorSearchField(in: view)
 
-        searchField.stringValue = "needle"
+        searchField.stringValue = "need"
         searchField.sendAction(searchField.action, to: searchField.target)
 
+        #expect(repository.searchQueries == ["need"])
         #expect(controller.outlineView(outlineView, numberOfChildrenOfItem: nil as Any?) == 1)
         #expect(outlineView.numberOfRows == 2)
         #expect(outlineObjectValue(controller, outlineView, row: 0) == "Work")
@@ -303,13 +307,20 @@ struct SnippetsEditorWindowControllerTests {
         let exportURL = try temporaryFileURL(fileName: "exported.xml")
         defer { try? FileManager.default.removeItem(at: exportURL.deletingLastPathComponent()) }
         let repository = FakeSnippetRepository(folderDetails: [
-            folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")])
+            folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")]),
+            folderDetail(title: "Filtered Out", snippets: [snippet(title: "Hidden", content: "export me too")])
         ])
+        repository.searchResults["email"] = [
+            folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")])
+        ]
         let dialogProvider = FakeSnippetsEditorDialogProvider(exportURL: exportURL)
         let controller = makeController(repository: repository, dialogProvider: dialogProvider)
         let view = try #require(controller.window?.contentView)
+        let searchField = try editorSearchField(in: view)
         let exportButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.exportButton)
 
+        searchField.stringValue = "email"
+        searchField.sendAction(searchField.action, to: searchField.target)
         exportButton.sendAction(exportButton.action, to: exportButton.target)
 
         let exportedXML = try #require(String(data: Data(contentsOf: exportURL), encoding: .utf8))
@@ -319,6 +330,8 @@ struct SnippetsEditorWindowControllerTests {
         #expect(exportedXML.contains("<title>Common</title>"))
         #expect(exportedXML.contains("<title>Email</title>"))
         #expect(exportedXML.contains("test@example.com"))
+        #expect(exportedXML.contains("<title>Filtered Out</title>"))
+        #expect(exportedXML.contains("export me too"))
     }
 }
 
@@ -438,6 +451,8 @@ private extension NSView {
 
 private final class FakeSnippetRepository: SnippetRepositoryProtocol {
     var folderDetails: [SnippetFolderDetail]
+    var searchResults = [String: [SnippetFolderDetail]]()
+    var searchQueries = [String]()
     var insertFolderCallCount = 0
     var insertSnippetFolderIDs = [SnippetFolder.ID]()
     var updatedFolderTitles = [SnippetFolder.ID: String]()
@@ -465,6 +480,10 @@ private final class FakeSnippetRepository: SnippetRepositoryProtocol {
 
     func searchFolderDetails(query: String) -> [SnippetFolderDetail] {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        searchQueries.append(query)
+        if let result = searchResults[normalizedQuery] {
+            return result
+        }
         guard !normalizedQuery.isEmpty else { return folderDetails }
 
         return folderDetails.compactMap { detail in

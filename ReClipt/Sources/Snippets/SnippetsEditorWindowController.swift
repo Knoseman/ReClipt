@@ -105,11 +105,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
     private var displayedFolders: [EditorSnippetFolder] {
-        guard isFiltering else { return folders }
-        return folders.filter { folder in
-            folder.title.lowercased().contains(normalizedSearchQuery) ||
-                folder.snippets.contains { snippetMatchesSearch($0) }
-        }
+        folders
     }
 
     // MARK: - Init
@@ -150,7 +146,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         hasConfiguredWindow = true
         window?.setFrameAutosaveName("SnippetsEditorWindow")
         setupUI()
-        folders = snippetRepository.fetchFolderDetails().map(EditorSnippetFolder.init)
+        refreshFolders()
         reloadSidebar()
         // Select first folder
         if let folder = folders.first {
@@ -367,6 +363,7 @@ final class SnippetsEditorWindowController: NSWindowController {
 
     @objc private func searchFieldChanged(_ sender: NSSearchField) {
         searchQuery = sender.stringValue
+        refreshFolders()
         reloadSidebar()
     }
 
@@ -376,11 +373,16 @@ final class SnippetsEditorWindowController: NSWindowController {
             NSSound.beep()
             return
         }
+        let folderID = folder.id
         clearSearchIfNeeded()
         let editorSnippet = EditorSnippet(snippet: snippet)
-        folder.snippets.append(editorSnippet)
+        guard let targetFolder = folders.first(where: { $0.id == folderID }) else {
+            NSSound.beep()
+            return
+        }
+        targetFolder.snippets.append(editorSnippet)
         reloadSidebar(select: editorSnippet)
-        outlineView.expandItem(folder)
+        outlineView.expandItem(targetFolder)
     }
 
     @IBAction private func addFolderButtonTapped(_ sender: AnyObject) {
@@ -434,7 +436,9 @@ final class SnippetsEditorWindowController: NSWindowController {
 
     @IBAction private func exportSnippetButtonTapped(_ sender: AnyObject) {
         do {
-            let transferFolders = folders.map(SnippetTransferFolder.init)
+            let transferFolders = snippetRepository.fetchFolderDetails()
+                .map(EditorSnippetFolder.init)
+                .map(SnippetTransferFolder.init)
             let data = try SnippetTransfer.exportXML(folders: transferFolders)
             guard let url = dialogProvider.exportFileURL(defaultFileName: "snippets.xml") else { return }
             try data.write(to: url, options: .atomic)
@@ -446,6 +450,13 @@ final class SnippetsEditorWindowController: NSWindowController {
 
 // MARK: - Item Selected
 private extension SnippetsEditorWindowController {
+    func refreshFolders() {
+        let folderDetails = isFiltering
+            ? snippetRepository.searchFolderDetails(query: searchQuery)
+            : snippetRepository.fetchFolderDetails()
+        folders = folderDetails.map(EditorSnippetFolder.init)
+    }
+
     func reloadSidebar(select item: Any? = nil) {
         outlineView.reloadData()
         if isFiltering {
@@ -475,20 +486,11 @@ private extension SnippetsEditorWindowController {
         guard isFiltering else { return }
         searchQuery = ""
         searchField.stringValue = ""
+        refreshFolders()
     }
 
     func snippets(for folder: EditorSnippetFolder) -> [EditorSnippet] {
-        guard isFiltering else { return folder.snippets }
-        if folder.title.lowercased().contains(normalizedSearchQuery) {
-            return folder.snippets
-        }
-        return folder.snippets.filter(snippetMatchesSearch)
-    }
-
-    func snippetMatchesSearch(_ snippet: EditorSnippet) -> Bool {
-        let query = normalizedSearchQuery
-        guard !query.isEmpty else { return true }
-        return snippet.title.lowercased().contains(query) || snippet.content.lowercased().contains(query)
+        folder.snippets
     }
 
     func changeItemFocus() {
