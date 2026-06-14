@@ -100,6 +100,78 @@ struct SnippetsEditorWindowControllerTests {
     }
 
     @Test
+    func sidebarStatusReflectsLoadedAndFilteredCounts() throws {
+        let repository = FakeSnippetRepository(folderDetails: [
+            folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")]),
+            folderDetail(
+                title: "Work",
+                snippets: [
+                    snippet(title: "Deploy", content: "ship it"),
+                    snippet(title: "Token", content: "secret")
+                ]
+            )
+        ])
+        repository.searchResults["deploy"] = [
+            folderDetail(title: "Work", snippets: [snippet(title: "Deploy", content: "ship it")])
+        ]
+        let controller = makeController(repository: repository)
+        let view = try #require(controller.window?.contentView)
+        let searchField = try editorSearchField(in: view)
+        let statusLabel = try editorTextField(in: view, identifier: SnippetsEditorControlIdentifier.sidebarStatusLabel)
+
+        #expect(statusLabel.stringValue == "2 folders, 3 snippets")
+
+        searchField.stringValue = "deploy"
+        searchField.sendAction(searchField.action, to: searchField.target)
+
+        #expect(statusLabel.stringValue == "1 folder result, 1 snippet result")
+    }
+
+    @Test
+    func toolbarButtonsReflectSelectionAndAvailableContent() throws {
+        let emptyController = makeController(repository: FakeSnippetRepository(folderDetails: []))
+        let emptyView = try #require(emptyController.window?.contentView)
+        let emptyAddSnippetButton = try editorButton(in: emptyView, identifier: SnippetsEditorControlIdentifier.addSnippetButton)
+        let emptyDeleteButton = try editorButton(in: emptyView, identifier: SnippetsEditorControlIdentifier.deleteButton)
+        let emptyExportButton = try editorButton(in: emptyView, identifier: SnippetsEditorControlIdentifier.exportButton)
+
+        #expect(emptyAddSnippetButton.isEnabled == false)
+        #expect(emptyDeleteButton.isEnabled == false)
+        #expect(emptyExportButton.isEnabled == false)
+
+        let populatedController = makeController(repository: FakeSnippetRepository(folderDetails: [
+            folderDetail(title: "Common")
+        ]))
+        let populatedView = try #require(populatedController.window?.contentView)
+        let populatedAddSnippetButton = try editorButton(in: populatedView, identifier: SnippetsEditorControlIdentifier.addSnippetButton)
+        let populatedDeleteButton = try editorButton(in: populatedView, identifier: SnippetsEditorControlIdentifier.deleteButton)
+        let populatedExportButton = try editorButton(in: populatedView, identifier: SnippetsEditorControlIdentifier.exportButton)
+
+        #expect(populatedAddSnippetButton.isEnabled)
+        #expect(populatedDeleteButton.isEnabled)
+        #expect(populatedExportButton.isEnabled)
+    }
+
+    @Test
+    func snippetTextEditorShowsPlaceholderForEmptySnippets() throws {
+        let repository = FakeSnippetRepository(folderDetails: [
+            folderDetail(title: "Common", snippets: [snippet(title: "Empty", content: "")])
+        ])
+        let controller = makeController(repository: repository)
+        let view = try #require(controller.window?.contentView)
+        let outlineView = try editorOutlineView(in: view)
+        let textView = try #require(editorTextView(in: view) as? PlaceholderTextView)
+
+        let folderItem = try #require(outlineView.item(atRow: 0))
+        outlineView.expandItem(folderItem)
+        outlineView.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+
+        #expect(textView.placeHolderText == "Write snippet content here.")
+        #expect(textView.string == "")
+        #expect(textView.textContainerInset == NSSize(width: 8, height: 8))
+    }
+
+    @Test
     func titleAndEnabledControlsPersistSelectionChanges() throws {
         let folderID = UUID()
         let snippetID = UUID()
@@ -341,7 +413,7 @@ private extension SnippetsEditorWindowControllerTests {
         dialogProvider: FakeSnippetsEditorDialogProvider = FakeSnippetsEditorDialogProvider()
     ) -> SnippetsEditorWindowController {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 480),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false

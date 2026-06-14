@@ -18,6 +18,7 @@ enum SnippetsEditorControlIdentifier {
     static let deleteButton = NSUserInterfaceItemIdentifier("SnippetsEditor.deleteButton")
     static let importButton = NSUserInterfaceItemIdentifier("SnippetsEditor.importButton")
     static let exportButton = NSUserInterfaceItemIdentifier("SnippetsEditor.exportButton")
+    static let sidebarStatusLabel = NSUserInterfaceItemIdentifier("SnippetsEditor.sidebarStatusLabel")
     static let folderTitleTextField = NSUserInterfaceItemIdentifier("SnippetsEditor.folderTitleTextField")
     static let folderEnabledCheckbox = NSUserInterfaceItemIdentifier("SnippetsEditor.folderEnabledCheckbox")
     static let snippetTitleTextField = NSUserInterfaceItemIdentifier("SnippetsEditor.snippetTitleTextField")
@@ -65,7 +66,7 @@ final class SnippetsEditorWindowController: NSWindowController {
     // MARK: - Properties
     static let sharedController: SnippetsEditorWindowController = {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 480),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -81,6 +82,10 @@ final class SnippetsEditorWindowController: NSWindowController {
     private var folderEnabledCheckbox: NSButton!
     private var snippetTitleTextField: NSTextField!
     private var snippetEnabledCheckbox: NSButton!
+    private var addSnippetButton: NSButton!
+    private var deleteButton: NSButton!
+    private var exportButton: NSButton!
+    private var sidebarStatusLabel: NSTextField!
     private var textView: NSTextView!
     private var textScrollView: NSScrollView!
     private var outlineView: NSOutlineView!
@@ -167,9 +172,10 @@ final class SnippetsEditorWindowController: NSWindowController {
         contentView.addSubview(splitView)
 
         // Left side - Outline view
-        let leftView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: contentView.frame.height))
+        let leftView = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: contentView.frame.height))
         let leftToolbarHeight: CGFloat = 40
         let searchHeight: CGFloat = 34
+        let statusHeight: CGFloat = 24
         let toolbarView = NSView(frame: NSRect(x: 0, y: leftView.frame.height - leftToolbarHeight, width: leftView.frame.width, height: leftToolbarHeight))
         toolbarView.autoresizingMask = [.width, .minYMargin]
 
@@ -188,7 +194,16 @@ final class SnippetsEditorWindowController: NSWindowController {
         searchField.delegate = self
         leftView.addSubview(searchField)
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: leftView.frame.width, height: leftView.frame.height - leftToolbarHeight - searchHeight))
+        sidebarStatusLabel = NSTextField(labelWithString: "")
+        sidebarStatusLabel.identifier = SnippetsEditorControlIdentifier.sidebarStatusLabel
+        sidebarStatusLabel.frame = NSRect(x: 10, y: 3, width: leftView.frame.width - 20, height: 18)
+        sidebarStatusLabel.autoresizingMask = [.width, .maxYMargin]
+        sidebarStatusLabel.font = NSFont.systemFont(ofSize: 11)
+        sidebarStatusLabel.textColor = .secondaryLabelColor
+        sidebarStatusLabel.lineBreakMode = .byTruncatingTail
+        leftView.addSubview(sidebarStatusLabel)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: statusHeight, width: leftView.frame.width, height: leftView.frame.height - leftToolbarHeight - searchHeight - statusHeight))
         scrollView.autoresizingMask = [.width, .height]
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
@@ -206,7 +221,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         leftView.addSubview(scrollView)
 
         // Toolbar buttons
-        let addSnippetButton = NSButton(frame: NSRect(x: 12, y: 8, width: 28, height: 24))
+        addSnippetButton = NSButton(frame: NSRect(x: 12, y: 8, width: 28, height: 24))
         addSnippetButton.title = ""
         addSnippetButton.image = NSImage(systemSymbolName: "doc.badge.plus", accessibilityDescription: String(localized: "Add Snippet"))
         addSnippetButton.identifier = SnippetsEditorControlIdentifier.addSnippetButton
@@ -226,7 +241,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         addFolderButton.action = #selector(addFolderButtonTapped(_:))
         toolbarView.addSubview(addFolderButton)
 
-        let deleteButton = NSButton(frame: NSRect(x: 84, y: 8, width: 28, height: 24))
+        deleteButton = NSButton(frame: NSRect(x: 84, y: 8, width: 28, height: 24))
         deleteButton.title = ""
         deleteButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: String(localized: "Delete"))
         deleteButton.identifier = SnippetsEditorControlIdentifier.deleteButton
@@ -246,7 +261,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         importButton.action = #selector(importSnippetButtonTapped(_:))
         toolbarView.addSubview(importButton)
 
-        let exportButton = NSButton(frame: NSRect(x: 160, y: 8, width: 28, height: 24))
+        exportButton = NSButton(frame: NSRect(x: 160, y: 8, width: 28, height: 24))
         exportButton.title = ""
         exportButton.image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: String(localized: "Export Snippets"))
         exportButton.identifier = SnippetsEditorControlIdentifier.exportButton
@@ -261,7 +276,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         splitView.addSubview(leftView)
 
         // Right side - Editor
-        let rightView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: contentView.frame.height))
+        let rightView = NSView(frame: NSRect(x: 0, y: 0, width: 480, height: contentView.frame.height))
 
         let settingsHeight: CGFloat = 96
         folderSettingView = NSView(frame: NSRect(x: 0, y: rightView.frame.height - settingsHeight, width: rightView.frame.width, height: settingsHeight))
@@ -313,11 +328,16 @@ final class SnippetsEditorWindowController: NSWindowController {
         textScrollView.hasVerticalScroller = true
         textScrollView.borderType = .bezelBorder
 
-        textView = NSTextView()
+        let snippetTextView = PlaceholderTextView()
+        snippetTextView.placeHolderText = String(localized: "Write snippet content here.")
+        snippetTextView.placeHolderColor = .placeholderTextColor
+        textView = snippetTextView
         textView.identifier = SnippetsEditorControlIdentifier.textView
         textView.font = NSFont.systemFont(ofSize: 14)
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isRichText = false
+        textView.isContinuousSpellCheckingEnabled = false
+        textView.textContainerInset = NSSize(width: 8, height: 8)
         textView.delegate = self
         textScrollView.documentView = textView
         rightView.addSubview(textScrollView)
@@ -455,6 +475,7 @@ private extension SnippetsEditorWindowController {
             ? snippetRepository.searchFolderDetails(query: searchQuery)
             : snippetRepository.fetchFolderDetails()
         folders = folderDetails.map(EditorSnippetFolder.init)
+        updateSidebarStatus()
     }
 
     func reloadSidebar(select item: Any? = nil) {
@@ -480,6 +501,7 @@ private extension SnippetsEditorWindowController {
             outlineView.deselectAll(nil)
         }
         changeItemFocus()
+        updateSidebarStatus()
     }
 
     func clearSearchIfNeeded() {
@@ -509,6 +531,7 @@ private extension SnippetsEditorWindowController {
                 ? String(localized: "No snippets match your search.")
                 : String(localized: "Select a folder or snippet.")
             emptyStateLabel.isHidden = false
+            updateActionState()
             return
         }
         if let folder = item as? EditorSnippetFolder {
@@ -528,6 +551,39 @@ private extension SnippetsEditorWindowController {
             snippetSettingView.isHidden = false
             textScrollView.isHidden = false
         }
+        updateActionState()
+    }
+
+    func updateActionState() {
+        let selectedItem = outlineView.item(atRow: outlineView.selectedRow)
+        addSnippetButton.isEnabled = selectedFolder != nil
+        deleteButton.isEnabled = selectedItem != nil
+        exportButton.isEnabled = !folders.isEmpty
+    }
+
+    func updateSidebarStatus() {
+        let folderCount = displayedFolders.count
+        let snippetCount = displayedFolders.reduce(0) { $0 + $1.snippets.count }
+        let format: String
+        switch (isFiltering, folderCount == 1, snippetCount == 1) {
+        case (true, true, true):
+            format = String(localized: "%d folder result, %d snippet result")
+        case (true, true, false):
+            format = String(localized: "%d folder result, %d snippet results")
+        case (true, false, true):
+            format = String(localized: "%d folder results, %d snippet result")
+        case (true, false, false):
+            format = String(localized: "%d folder results, %d snippet results")
+        case (false, true, true):
+            format = String(localized: "%d folder, %d snippet")
+        case (false, true, false):
+            format = String(localized: "%d folder, %d snippets")
+        case (false, false, true):
+            format = String(localized: "%d folders, %d snippet")
+        case (false, false, false):
+            format = String(localized: "%d folders, %d snippets")
+        }
+        sidebarStatusLabel.stringValue = String(format: format, folderCount, snippetCount)
     }
 }
 
@@ -696,6 +752,7 @@ extension SnippetsEditorWindowController: NSOutlineViewDelegate {
     func controlTextDidChange(_ obj: Notification) {
         guard let field = obj.object as? NSSearchField, field === searchField else { return }
         searchQuery = field.stringValue
+        refreshFolders()
         reloadSidebar()
     }
 }

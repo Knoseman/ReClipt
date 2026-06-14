@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%d folder result, %d snippet result": {
+    },
+    "%d folder result, %d snippet results": {
+    },
+    "%d folder results, %d snippet result": {
+    },
+    "%d folder results, %d snippet results": {
+    },
+    "%d folder, %d snippet": {
+    },
+    "%d folder, %d snippets": {
+    },
+    "%d folders, %d snippet": {
+    },
+    "%d folders, %d snippets": {
+    },
     "Add": {
       "localizations": {
         "pt-BR": {
@@ -892,6 +908,8 @@
           }
         }
       }
+    },
+    "Write snippet content here.": {
     },
     "chars": {
     },
