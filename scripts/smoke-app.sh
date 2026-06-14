@@ -13,7 +13,12 @@ PROCESS_NAME="${PROCESS_NAME:-ReClipt}"
 LAUNCH_TIMEOUT_SECONDS="${LAUNCH_TIMEOUT_SECONDS:-10}"
 SMOKE_REQUIRE_VALID_SIGNATURE="${SMOKE_REQUIRE_VALID_SIGNATURE:-1}"
 SMOKE_LEAVE_RUNNING="${SMOKE_LEAVE_RUNNING:-0}"
+SMOKE_UI_FLOW="${SMOKE_UI_FLOW:-0}"
+SMOKE_RESULT_PATH="${SMOKE_RESULT_PATH:-${TMPDIR:-/tmp}/reclipt-smoke-ui-$$.txt}"
+SMOKE_LAUNCH_TMPDIR="${SMOKE_LAUNCH_TMPDIR:-/tmp}"
 launched_app=0
+launch_copy_dir=""
+launch_app_path="$APP_PATH"
 
 fail() {
   echo "Smoke test failed: $*" >&2
@@ -52,6 +57,9 @@ cleanup() {
   if [[ "$SMOKE_LEAVE_RUNNING" != "1" && "$launched_app" == "1" ]]; then
     quit_running_app
   fi
+  if [[ -n "$launch_copy_dir" ]]; then
+    rm -rf "$launch_copy_dir"
+  fi
 }
 
 trap cleanup EXIT
@@ -88,7 +96,25 @@ if pgrep -x "$PROCESS_NAME" >/dev/null 2>&1; then
 fi
 
 echo "Launching $APP_PATH..."
-open "$APP_PATH"
+typeset -a open_args
+if [[ "$SMOKE_UI_FLOW" == "1" ]]; then
+  rm -f "$SMOKE_RESULT_PATH"
+  open_args=(-n "$launch_app_path" --args --reclipt-smoke-ui --reclipt-smoke-result "$SMOKE_RESULT_PATH")
+else
+  open_args=("$launch_app_path")
+fi
+
+if ! open "${open_args[@]}"; then
+  launch_copy_dir="$(mktemp -d "$SMOKE_LAUNCH_TMPDIR/reclipt-smoke-launch.XXXXXX")"
+  launch_app_path="$launch_copy_dir/ReClipt.app"
+  echo "LaunchServices rejected the build path; retrying from $launch_app_path..."
+  cp -R -X "$APP_PATH" "$launch_app_path"
+  if [[ "$SMOKE_UI_FLOW" == "1" ]]; then
+    open -n "$launch_app_path" --args --reclipt-smoke-ui --reclipt-smoke-result "$SMOKE_RESULT_PATH"
+  else
+    open "$launch_app_path"
+  fi
+fi
 launched_app=1
 
 pid=""
@@ -111,11 +137,33 @@ if ! ps -p "$pid" >/dev/null 2>&1; then
   fail "$PROCESS_NAME launched and then exited"
 fi
 
+if [[ "$SMOKE_UI_FLOW" == "1" ]]; then
+  attempts=0
+  while [[ ! -f "$SMOKE_RESULT_PATH" && $attempts -lt $max_attempts ]]; do
+    sleep 0.1
+    attempts=$((attempts + 1))
+  done
+
+  [[ -f "$SMOKE_RESULT_PATH" ]] || fail "UI smoke result was not written within ${LAUNCH_TIMEOUT_SECONDS}s"
+
+  smoke_result="$(cat "$SMOKE_RESULT_PATH")"
+  first_line="$(printf "%s\n" "$smoke_result" | head -n 1)"
+  [[ "$first_line" == "ok" ]] || fail "UI smoke checks failed:\n$smoke_result"
+fi
+
 echo "Smoke test succeeded."
 echo "Process:"
 echo "  $PROCESS_NAME ($pid)"
 echo "Bundle:"
-echo "  $APP_PATH"
+echo "  $launch_app_path"
+if [[ "$launch_app_path" != "$APP_PATH" ]]; then
+  echo "Source bundle:"
+  echo "  $APP_PATH"
+fi
+if [[ "$SMOKE_UI_FLOW" == "1" ]]; then
+  echo "UI checks:"
+  sed '1d' "$SMOKE_RESULT_PATH" | sed 's/^/  /'
+fi
 
 if [[ "$SMOKE_LEAVE_RUNNING" == "1" ]]; then
   echo "Leaving app running because SMOKE_LEAVE_RUNNING=1."

@@ -62,6 +62,7 @@ app and run the app-level smoke test:
 ```bash
 ./scripts/build-release.sh
 ./scripts/smoke-app.sh
+SMOKE_UI_FLOW=1 ./scripts/smoke-app.sh
 ```
 
 This builds the normal locally signed Release app, verifies the app bundle,
@@ -70,6 +71,11 @@ signature, launches it, checks that it remains running briefly, then quits it. I
 intentionally quits any already-running ReClipt instance first so each run starts
 from a fresh app process. This matters because Accessibility permissions are tied
 to the app's signed identity.
+
+`SMOKE_UI_FLOW=1` adds an app-level window check: ReClipt launches with an
+internal smoke argument, opens Preferences and Snippets Editor, verifies those
+windows are visible and populated, and confirms status item visibility matches
+the stored menu bar icon setting.
 
 For manual testing, launch the signed app:
 

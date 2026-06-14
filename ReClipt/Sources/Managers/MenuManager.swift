@@ -56,6 +56,10 @@ final class MenuManager: NSObject {
         bind()
     }
 
+    var hasVisibleStatusItem: Bool {
+        statusItem != nil
+    }
+
     deinit {
         if let observer = historyObserver {
             notificationCenter.removeObserver(observer)

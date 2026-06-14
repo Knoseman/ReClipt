@@ -61,6 +61,7 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   -scheme "$SCHEME" \
   -project "$PROJECT_PATH" \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
   "${XCODEBUILD_PACKAGE_ARGS[@]}" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
