@@ -478,6 +478,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return -1 }
         defer { sqlite3_finalize(statement) }
         guard sqlite3_step(statement) == SQLITE_ROW else { return -1 }
+        guard sqlite3_column_type(statement, 0) != SQLITE_NULL else { return -1 }
         return SQLiteStore.columnInt(statement!, index: 0)
     }
 
@@ -488,6 +489,7 @@ final class SnippetRepository: SnippetRepositoryProtocol {
         defer { sqlite3_finalize(statement) }
         SQLiteStore.bindText(statement!, index: 1, value: folderID.uuidString)
         guard sqlite3_step(statement) == SQLITE_ROW else { return -1 }
+        guard sqlite3_column_type(statement, 0) != SQLITE_NULL else { return -1 }
         return SQLiteStore.columnInt(statement!, index: 0)
     }
 
