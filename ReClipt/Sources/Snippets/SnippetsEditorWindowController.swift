@@ -25,6 +25,40 @@ enum SnippetsEditorControlIdentifier {
     static let outlineView = NSUserInterfaceItemIdentifier("SnippetsEditor.outlineView")
 }
 
+protocol SnippetsEditorDialogProviding {
+    func confirmDeleteItem() -> Bool
+    func importFileURL() -> URL?
+    func exportFileURL(defaultFileName: String) -> URL?
+}
+
+struct AppKitSnippetsEditorDialogProvider: SnippetsEditorDialogProviding {
+    func confirmDeleteItem() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Delete Item")
+        alert.informativeText = String(localized: "Are you sure want to delete this item?")
+        alert.addButton(withTitle: String(localized: "Delete Item"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == NSApplication.ModalResponse.alertFirstButtonReturn
+    }
+
+    func importFileURL() -> URL? {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
+        panel.allowedFileTypes = [Constants.Xml.fileType, "plist"]
+        return panel.runModal() == NSApplication.ModalResponse.OK ? panel.urls.first : nil
+    }
+
+    func exportFileURL(defaultFileName: String) -> URL? {
+        let panel = NSSavePanel()
+        panel.allowedFileTypes = [Constants.Xml.fileType]
+        panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
+        panel.nameFieldStringValue = defaultFileName
+        return panel.runModal() == NSApplication.ModalResponse.OK ? panel.url : nil
+    }
+}
+
 final class SnippetsEditorWindowController: NSWindowController {
 
     // MARK: - Properties
@@ -55,6 +89,7 @@ final class SnippetsEditorWindowController: NSWindowController {
     private var updateSnippetTimer: Timer?
 
     private let snippetRepository: SnippetRepositoryProtocol
+    private let dialogProvider: SnippetsEditorDialogProviding
     private var folders = [EditorSnippetFolder]()
     private var searchQuery = ""
     private var hasConfiguredWindow = false
@@ -80,14 +115,17 @@ final class SnippetsEditorWindowController: NSWindowController {
 
     init(
         window: NSWindow?,
-        snippetRepository: SnippetRepositoryProtocol = SnippetRepository()
+        snippetRepository: SnippetRepositoryProtocol = SnippetRepository(),
+        dialogProvider: SnippetsEditorDialogProviding = AppKitSnippetsEditorDialogProvider()
     ) {
         self.snippetRepository = snippetRepository
+        self.dialogProvider = dialogProvider
         super.init(window: window)
     }
 
     required init?(coder: NSCoder) {
         self.snippetRepository = SnippetRepository()
+        self.dialogProvider = AppKitSnippetsEditorDialogProvider()
         super.init(coder: coder)
     }
 
@@ -361,14 +399,7 @@ final class SnippetsEditorWindowController: NSWindowController {
             return
         }
 
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Delete Item")
-        alert.informativeText = String(localized: "Are you sure want to delete this item?")
-        alert.addButton(withTitle: String(localized: "Delete Item"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
-        NSApp.activate(ignoringOtherApps: true)
-        let result = alert.runModal()
-        if result != NSApplication.ModalResponse.alertFirstButtonReturn { return }
+        guard dialogProvider.confirmDeleteItem() else { return }
 
         if let folder = item as? EditorSnippetFolder {
             folders.removeAll(where: { $0.id == folder.id })
@@ -382,16 +413,7 @@ final class SnippetsEditorWindowController: NSWindowController {
     }
 
     @IBAction private func importSnippetButtonTapped(_ sender: AnyObject) {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
-        panel.allowedFileTypes = [Constants.Xml.fileType, "plist"]
-        let returnCode = panel.runModal()
-
-        if returnCode != NSApplication.ModalResponse.OK { return }
-
-        let fileURLs = panel.urls
-        guard let url = fileURLs.first else { return }
+        guard let url = dialogProvider.importFileURL() else { return }
         guard let data = try? Data(contentsOf: url) else { return }
 
         do {
@@ -413,14 +435,7 @@ final class SnippetsEditorWindowController: NSWindowController {
         do {
             let transferFolders = folders.map(SnippetTransferFolder.init)
             let data = try SnippetTransfer.exportXML(folders: transferFolders)
-            let panel = NSSavePanel()
-            panel.allowedFileTypes = [Constants.Xml.fileType]
-            panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
-            panel.nameFieldStringValue = "snippets.xml"
-            let returnCode = panel.runModal()
-
-            if returnCode != NSApplication.ModalResponse.OK { return }
-            guard let url = panel.url else { return }
+            guard let url = dialogProvider.exportFileURL(defaultFileName: "snippets.xml") else { return }
             try data.write(to: url, options: .atomic)
         } catch {
             NSSound.beep()

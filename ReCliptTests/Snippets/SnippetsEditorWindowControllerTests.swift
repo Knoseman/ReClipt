@@ -181,10 +181,152 @@ struct SnippetsEditorWindowControllerTests {
         #expect(shouldChange)
         #expect(repository.updatedSnippetContents[snippetID] == "new@example.com")
     }
+
+    @Test
+    func deleteFolderConfirmationDeletesSelectedFolder() throws {
+        let folderID = UUID()
+        let repository = FakeSnippetRepository(folderDetails: [
+            SnippetFolderDetail(
+                folder: SnippetFolder(id: folderID, title: "Common", index: 0, isEnabled: true),
+                snippets: []
+            )
+        ])
+        let dialogProvider = FakeSnippetsEditorDialogProvider(confirmDeleteResult: true)
+        let controller = makeController(repository: repository, dialogProvider: dialogProvider)
+        let view = try #require(controller.window?.contentView)
+        let outlineView = try editorOutlineView(in: view)
+        let deleteButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.deleteButton)
+
+        deleteButton.sendAction(deleteButton.action, to: deleteButton.target)
+
+        #expect(dialogProvider.confirmDeleteCallCount == 1)
+        #expect(repository.deletedFolderIDs == [folderID])
+        #expect(outlineView.numberOfRows == 0)
+    }
+
+    @Test
+    func deleteSnippetConfirmationDeletesSelectedSnippet() throws {
+        let folderID = UUID()
+        let snippetID = UUID()
+        let repository = FakeSnippetRepository(folderDetails: [
+            SnippetFolderDetail(
+                folder: SnippetFolder(id: folderID, title: "Common", index: 0, isEnabled: true),
+                snippets: [
+                    Snippet(
+                        id: snippetID,
+                        folderID: folderID,
+                        title: "Email",
+                        content: "test@example.com",
+                        index: 0,
+                        isEnabled: true
+                    )
+                ]
+            )
+        ])
+        let dialogProvider = FakeSnippetsEditorDialogProvider(confirmDeleteResult: true)
+        let controller = makeController(repository: repository, dialogProvider: dialogProvider)
+        let view = try #require(controller.window?.contentView)
+        let outlineView = try editorOutlineView(in: view)
+        let deleteButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.deleteButton)
+
+        let folderItem = try #require(outlineView.item(atRow: 0))
+        outlineView.expandItem(folderItem)
+        outlineView.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+        deleteButton.sendAction(deleteButton.action, to: deleteButton.target)
+
+        #expect(dialogProvider.confirmDeleteCallCount == 1)
+        #expect(repository.deletedSnippetIDs == [snippetID])
+        #expect(outlineView.numberOfRows == 1)
+    }
+
+    @Test
+    func deleteCancellationDoesNotDeleteSelectedFolder() throws {
+        let folderID = UUID()
+        let repository = FakeSnippetRepository(folderDetails: [
+            SnippetFolderDetail(
+                folder: SnippetFolder(id: folderID, title: "Common", index: 0, isEnabled: true),
+                snippets: []
+            )
+        ])
+        let dialogProvider = FakeSnippetsEditorDialogProvider(confirmDeleteResult: false)
+        let controller = makeController(repository: repository, dialogProvider: dialogProvider)
+        let view = try #require(controller.window?.contentView)
+        let outlineView = try editorOutlineView(in: view)
+        let deleteButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.deleteButton)
+
+        deleteButton.sendAction(deleteButton.action, to: deleteButton.target)
+
+        #expect(dialogProvider.confirmDeleteCallCount == 1)
+        #expect(repository.deletedFolderIDs.isEmpty)
+        #expect(outlineView.numberOfRows == 1)
+    }
+
+    @Test
+    func importSelectedFileAddsImportedFolder() throws {
+        let importURL = try temporaryFileURL(fileName: "snippets.xml")
+        defer { try? FileManager.default.removeItem(at: importURL.deletingLastPathComponent()) }
+        let xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <folders>
+            <folder>
+                <title>Imported</title>
+                <snippets>
+                    <snippet>
+                        <title>Greeting</title>
+                        <content>Hello</content>
+                    </snippet>
+                </snippets>
+            </folder>
+        </folders>
+        """
+        try Data(xml.utf8).write(to: importURL)
+
+        let repository = FakeSnippetRepository(folderDetails: [])
+        let dialogProvider = FakeSnippetsEditorDialogProvider(importURL: importURL)
+        let controller = makeController(repository: repository, dialogProvider: dialogProvider)
+        let view = try #require(controller.window?.contentView)
+        let outlineView = try editorOutlineView(in: view)
+        let importButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.importButton)
+
+        importButton.sendAction(importButton.action, to: importButton.target)
+
+        #expect(dialogProvider.importFileCallCount == 1)
+        #expect(repository.folderDetails.count == 1)
+        #expect(repository.folderDetails[0].folder.title == "Imported")
+        #expect(repository.folderDetails[0].snippets.first?.title == "Greeting")
+        #expect(outlineView.numberOfRows == 1)
+        #expect(outlineObjectValue(controller, outlineView, row: 0) == "Imported")
+    }
+
+    @Test
+    func exportSelectedFileWritesCurrentFolders() throws {
+        let exportURL = try temporaryFileURL(fileName: "exported.xml")
+        defer { try? FileManager.default.removeItem(at: exportURL.deletingLastPathComponent()) }
+        let repository = FakeSnippetRepository(folderDetails: [
+            folderDetail(title: "Common", snippets: [snippet(title: "Email", content: "test@example.com")])
+        ])
+        let dialogProvider = FakeSnippetsEditorDialogProvider(exportURL: exportURL)
+        let controller = makeController(repository: repository, dialogProvider: dialogProvider)
+        let view = try #require(controller.window?.contentView)
+        let exportButton = try editorButton(in: view, identifier: SnippetsEditorControlIdentifier.exportButton)
+
+        exportButton.sendAction(exportButton.action, to: exportButton.target)
+
+        let exportedXML = try #require(String(data: Data(contentsOf: exportURL), encoding: .utf8))
+        #expect(dialogProvider.exportFileCallCount == 1)
+        #expect(dialogProvider.defaultExportFileNames == ["snippets.xml"])
+        #expect(exportedXML.contains("format=\"reclipt-snippets\""))
+        #expect(exportedXML.contains("<title>Common</title>"))
+        #expect(exportedXML.contains("<title>Email</title>"))
+        #expect(exportedXML.contains("test@example.com"))
+    }
 }
 
 private extension SnippetsEditorWindowControllerTests {
-    func makeController(repository: FakeSnippetRepository) -> SnippetsEditorWindowController {
+    func makeController(
+        repository: FakeSnippetRepository,
+        dialogProvider: FakeSnippetsEditorDialogProvider = FakeSnippetsEditorDialogProvider()
+    ) -> SnippetsEditorWindowController {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -192,9 +334,20 @@ private extension SnippetsEditorWindowControllerTests {
             defer: false
         )
         window.title = "Edit Snippets"
-        let controller = SnippetsEditorWindowController(window: window, snippetRepository: repository)
+        let controller = SnippetsEditorWindowController(
+            window: window,
+            snippetRepository: repository,
+            dialogProvider: dialogProvider
+        )
         controller.configureWindowIfNeeded()
         return controller
+    }
+
+    func temporaryFileURL(fileName: String) throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ReCliptTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent(fileName)
     }
 
     func folderDetail(
@@ -432,5 +585,41 @@ private final class FakeSnippetRepository: SnippetRepositoryProtocol {
 
     func deleteSnippet(_ id: Snippet.ID) {
         deletedSnippetIDs.append(id)
+    }
+}
+
+private final class FakeSnippetsEditorDialogProvider: SnippetsEditorDialogProviding {
+    var confirmDeleteResult: Bool
+    var importURL: URL?
+    var exportURL: URL?
+    var confirmDeleteCallCount = 0
+    var importFileCallCount = 0
+    var exportFileCallCount = 0
+    var defaultExportFileNames = [String]()
+
+    init(
+        confirmDeleteResult: Bool = true,
+        importURL: URL? = nil,
+        exportURL: URL? = nil
+    ) {
+        self.confirmDeleteResult = confirmDeleteResult
+        self.importURL = importURL
+        self.exportURL = exportURL
+    }
+
+    func confirmDeleteItem() -> Bool {
+        confirmDeleteCallCount += 1
+        return confirmDeleteResult
+    }
+
+    func importFileURL() -> URL? {
+        importFileCallCount += 1
+        return importURL
+    }
+
+    func exportFileURL(defaultFileName: String) -> URL? {
+        exportFileCallCount += 1
+        defaultExportFileNames.append(defaultFileName)
+        return exportURL
     }
 }
