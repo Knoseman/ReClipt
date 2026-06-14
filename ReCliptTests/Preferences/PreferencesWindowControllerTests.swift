@@ -16,6 +16,47 @@ import Testing
 @Suite(.serialized)
 struct PreferencesWindowControllerTests {
     @Test
+    func preferencesWindowSwitchesBetweenAllPanes() throws {
+        let controller = makePreferencesWindowController()
+        defer { controller.close() }
+        let contentView = try #require(controller.window?.contentView)
+
+        let expectedPaneLabels = [
+            "Behavior",
+            "Layout",
+            "Clipboard Types",
+            "Excluded Applications",
+            "Main Menu:"
+        ]
+
+        for (index, label) in expectedPaneLabels.enumerated() {
+            let button = try preferenceTabButton(in: contentView, tag: index)
+            button.sendAction(button.action, to: button.target)
+
+            #expect(contentView.descendantLabels().contains(label))
+            #expect(button.layer?.borderWidth == 1)
+        }
+    }
+
+    @Test
+    func preferencesToolbarStaysAlignedAcrossPaneSwitches() throws {
+        let controller = makePreferencesWindowController()
+        defer { controller.close() }
+        let contentView = try #require(controller.window?.contentView)
+
+        let initialButtonFrames = try preferenceTabButtons(in: contentView)
+            .map(\.frame)
+
+        for index in 0..<5 {
+            let button = try preferenceTabButton(in: contentView, tag: index)
+            button.sendAction(button.action, to: button.target)
+
+            let frames = try preferenceTabButtons(in: contentView).map(\.frame)
+            #expect(frames == initialButtonFrames)
+        }
+    }
+
+    @Test
     func generalPaneReflectsStoredDefaults() throws {
         let defaults = try pushPreferencesTestEnvironment("GeneralPaneReflectsStoredDefaults")
         defer { popPreferencesTestEnvironment(defaults, suiteName: "GeneralPaneReflectsStoredDefaults") }
@@ -147,6 +188,30 @@ struct PreferencesWindowControllerTests {
 }
 
 private extension PreferencesWindowControllerTests {
+    func makePreferencesWindowController() -> PreferencesWindowController {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        let controller = PreferencesWindowController(window: window)
+        controller.showWindow(nil)
+        return controller
+    }
+
+    func preferenceTabButton(in view: NSView, tag: Int) throws -> NSButton {
+        try #require(preferenceTabButtons(in: view).first { $0.tag == tag })
+    }
+
+    func preferenceTabButtons(in view: NSView) throws -> [NSButton] {
+        let buttons = view.descendantControls(ofType: NSButton.self)
+            .filter { $0.title.isEmpty && !$0.isBordered && $0.tag >= 0 && $0.tag < 5 && $0.action != nil }
+            .sorted { $0.tag < $1.tag }
+        #expect(buttons.count == 5)
+        return buttons
+    }
+
     func pushPreferencesTestEnvironment(_ suiteName: String) throws -> UserDefaults {
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
@@ -213,6 +278,12 @@ private extension NSView {
         var controls = subviews.compactMap { $0 as? T }
         controls += subviews.flatMap { $0.descendantControls(ofType: type) }
         return controls
+    }
+
+    func descendantLabels() -> [String] {
+        descendantControls(ofType: NSTextField.self)
+            .filter { !$0.isEditable }
+            .map(\.stringValue)
     }
 }
 

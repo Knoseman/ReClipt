@@ -174,7 +174,7 @@ private final class PreferenceTabButton: NSButton {
     }
 
     init(title: String, image: NSImage?) {
-        super.init(frame: .zero)
+        super.init(frame: NSRect(x: 0, y: 0, width: 72, height: 48))
         self.title = ""
         self.isBordered = false
         self.focusRingType = .none
