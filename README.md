@@ -21,6 +21,15 @@ No external service configuration is required for local builds.
 
 ### Command-line build
 
+Run the full local validation pass with:
+
+```bash
+./scripts/validate.sh
+```
+
+This runs the test suite, builds the Release app, and verifies the app binary is
+`arm64`.
+
 This repo includes a local release build script:
 
 ```bash
@@ -44,6 +53,23 @@ Notes:
 - If needed, run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
 - For local unsigned/ad-hoc builds, enable `Configurations/CodeSigning-AdHoc.xcconfig` from `Configurations/CodeSigning.xcconfig`.
 - The current project target is `arm64` only.
+
+### Manual App Validation
+
+After `./scripts/validate.sh` succeeds, launch the built app:
+
+```bash
+open build/Build/Products/Release/ReClipt.app
+```
+
+Check these app-level behaviors manually:
+
+- ReClipt launches without a Dock icon.
+- The menu bar icon appears when the icon style is not Hidden.
+- Clipboard history captures new copied text.
+- Selecting a history item pastes or copies it according to Accessibility permission state.
+- Snippets can be created, edited, imported, exported, and pasted.
+- Preferences tabs stay aligned and settings take effect after changing them.
 
 ### Ad-hoc Release
 

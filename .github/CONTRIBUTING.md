@@ -29,6 +29,13 @@ same change.
 
 ## Validation
 
-Before opening a change, run the app test scheme in Xcode when available. If a
-full Xcode install is not available, at least run local Swift parsing or
-typechecking for the files you changed.
+Before opening a change, run:
+
+```bash
+./scripts/validate.sh
+```
+
+This runs the full test suite, builds the Release app, and verifies the Release
+binary contains the supported architecture. If a full Xcode install is not
+available, at least run local Swift parsing or typechecking for the files you
+changed.
