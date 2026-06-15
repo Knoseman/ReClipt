@@ -175,12 +175,19 @@ private extension AppDelegate {
         let statusSetting = AppEnvironment.current.defaults.integer(forKey: Constants.UserDefaults.showStatusItem)
         let shouldShowStatusItem = statusSetting != MenuManager.StatusType.none.rawValue
 
+        record("app-activation-policy-accessory", NSApp.activationPolicy() == .accessory)
+        record("menu-manager-built-menus", AppEnvironment.current.menuManager.hasBuiltMenus)
         record("preferences-window-visible", preferencesWindow?.isVisible == true)
         record("preferences-window-title", preferencesWindow?.title == String(localized: "Preferences"))
         record("preferences-window-has-content", preferencesWindow?.contentView?.subviews.isEmpty == false)
+        record("preferences-window-size", isUsableWindow(preferencesWindow, minimumSize: NSSize(width: 520, height: 300)))
+        record("preferences-toolbar-tabs-present", preferenceToolbarButtons(in: preferencesWindow).count == 5)
+        record("preferences-toolbar-tabs-switch", preferenceToolbarButtonsSwitchPanes(in: preferencesWindow))
         record("snippets-window-visible", snippetsWindow?.isVisible == true)
         record("snippets-window-title", snippetsWindow?.title == String(localized: "Edit Snippets"))
         record("snippets-window-has-content", snippetsWindow?.contentView?.subviews.isEmpty == false)
+        record("snippets-window-size", isUsableWindow(snippetsWindow, minimumSize: NSSize(width: 520, height: 320)))
+        record("snippets-editor-controls-present", snippetsEditorControlsArePresent(in: snippetsWindow))
         record("status-item-setting-matches", AppEnvironment.current.menuManager.hasVisibleStatusItem == shouldShowStatusItem)
 
         let statusLine = failures.isEmpty ? "ok" : "fail"
@@ -195,5 +202,76 @@ private extension AppDelegate {
         } else {
             print(output)
         }
+    }
+
+    func isUsableWindow(_ window: NSWindow?, minimumSize: NSSize) -> Bool {
+        guard let window else { return false }
+        return window.frame.width >= minimumSize.width && window.frame.height >= minimumSize.height
+    }
+
+    func preferenceToolbarButtons(in window: NSWindow?) -> [NSButton] {
+        guard let contentView = window?.contentView else { return [] }
+        return contentView.descendantViews(compactMap: { view in
+            guard let button = view as? NSButton else { return nil }
+            guard button.action.map(NSStringFromSelector) == "toolbarButtonTapped:" else { return nil }
+            return button
+        }).sorted { $0.tag < $1.tag }
+    }
+
+    func preferenceToolbarButtonsSwitchPanes(in window: NSWindow?) -> Bool {
+        let buttons = preferenceToolbarButtons(in: window)
+        guard buttons.count == 5 else { return false }
+
+        for button in buttons {
+            button.performClick(nil)
+            guard isUsableWindow(window, minimumSize: NSSize(width: 520, height: 300)) else {
+                return false
+            }
+            guard window?.contentView?.subviews.isEmpty == false else {
+                return false
+            }
+        }
+        return true
+    }
+
+    func snippetsEditorControlsArePresent(in window: NSWindow?) -> Bool {
+        guard let contentView = window?.contentView else { return false }
+        let requiredIdentifiers = [
+            SnippetsEditorControlIdentifier.searchField,
+            SnippetsEditorControlIdentifier.addSnippetButton,
+            SnippetsEditorControlIdentifier.addFolderButton,
+            SnippetsEditorControlIdentifier.deleteButton,
+            SnippetsEditorControlIdentifier.importButton,
+            SnippetsEditorControlIdentifier.exportButton,
+            SnippetsEditorControlIdentifier.sidebarStatusLabel,
+            SnippetsEditorControlIdentifier.outlineView,
+            SnippetsEditorControlIdentifier.textView
+        ]
+
+        return requiredIdentifiers.allSatisfy { identifier in
+            contentView.descendantView(withIdentifier: identifier) != nil
+        }
+    }
+}
+
+private extension NSView {
+    func descendantView(withIdentifier identifier: NSUserInterfaceItemIdentifier) -> NSView? {
+        descendantViews { view in
+            view.identifier == identifier ? view : nil
+        }.first
+    }
+
+    func descendantViews<T>(compactMap transform: (NSView) -> T?) -> [T] {
+        var matches = [T]()
+
+        if let match = transform(self) {
+            matches.append(match)
+        }
+
+        for subview in subviews {
+            matches.append(contentsOf: subview.descendantViews(compactMap: transform))
+        }
+
+        return matches
     }
 }

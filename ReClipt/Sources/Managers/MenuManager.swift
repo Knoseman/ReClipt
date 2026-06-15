@@ -60,6 +60,10 @@ final class MenuManager: NSObject {
         statusItem != nil
     }
 
+    var hasBuiltMenus: Bool {
+        mainMenu != nil && historyMenu != nil && snippetMenu != nil
+    }
+
     deinit {
         if let observer = historyObserver {
             notificationCenter.removeObserver(observer)

@@ -76,10 +76,11 @@ any already-running ReClipt instance first so each run starts from a fresh app
 process. This matters because Accessibility permissions are tied to the app's
 signed identity.
 
-`SMOKE_UI_FLOW=1` adds an app-level window check: ReClipt launches with an
-internal smoke argument, opens Preferences and Snippets Editor, verifies those
-windows are visible and populated, and confirms status item visibility matches
-the stored menu bar icon setting.
+`SMOKE_UI_FLOW=1` adds app-level UI checks: ReClipt launches with an internal
+smoke argument, opens Preferences and Snippets Editor, verifies those windows
+are visible and populated, switches through the Preferences toolbar panes,
+checks expected Snippets Editor controls, and confirms status item visibility
+matches the stored menu bar icon setting.
 
 For manual testing, launch the signed app:
 
