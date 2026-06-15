@@ -205,6 +205,7 @@ Expected output:
 
 ```text
 build/Build/Products/Release/ReClipt-macOS.zip
+build/Build/Products/Release/ReClipt-macOS.zip.sha256
 ```
 
 The script fails early if the Developer ID certificate or notary profile is not

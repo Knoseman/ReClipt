@@ -11,6 +11,7 @@ PRODUCTS_DIR="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION"
 APP_PATH="$PRODUCTS_DIR/ReClipt.app"
 NOTARY_ZIP_PATH="$PRODUCTS_DIR/ReClipt-notary-upload.zip"
 FINAL_ZIP_PATH="$PRODUCTS_DIR/ReClipt-macOS.zip"
+CHECKSUM_PATH="$FINAL_ZIP_PATH.sha256"
 TEAM_ID="${TEAM_ID:-894T922935}"
 DEVELOPER_ID_IDENTITY="${DEVELOPER_ID_IDENTITY:-Developer ID Application}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-ReCliptNotaryProfile}"
@@ -73,7 +74,7 @@ echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 codesign -dv --verbose=4 "$APP_PATH" 2>&1 | sed -n '1,40p'
 
-rm -f "$NOTARY_ZIP_PATH" "$FINAL_ZIP_PATH"
+rm -f "$NOTARY_ZIP_PATH" "$FINAL_ZIP_PATH" "$CHECKSUM_PATH"
 
 echo
 echo "Creating notarization upload archive..."
@@ -93,9 +94,18 @@ echo "Creating final release archive..."
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$FINAL_ZIP_PATH"
 
 echo
+echo "Writing SHA-256 checksum..."
+(
+  cd "$PRODUCTS_DIR"
+  shasum -a 256 "$(basename "$FINAL_ZIP_PATH")" > "$(basename "$CHECKSUM_PATH")"
+)
+
+echo
 echo "Checking Gatekeeper assessment..."
 spctl -a -vv "$APP_PATH"
 
 echo
 echo "Notarized release package:"
 echo "  $FINAL_ZIP_PATH"
+echo "Checksum:"
+echo "  $CHECKSUM_PATH"
