@@ -73,6 +73,9 @@ fi
 
 mkdir -p "$LOG_DIR"
 
+./scripts/validate-scripts.sh
+
+echo
 echo "Running full test suite..."
 if ! run_test_suite; then
   if [[ -f "$TEST_LOG" ]] && test_log_has_result_bundle_race; then

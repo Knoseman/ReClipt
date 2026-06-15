@@ -30,8 +30,9 @@ Run the full local validation pass with:
 ./scripts/validate.sh
 ```
 
-This runs the test suite, builds a disposable unsigned Release app under
-`build/Validation`, and verifies the app binary is `arm64`.
+This checks shell script syntax/executable bits, runs the test suite, builds a
+disposable unsigned Release app under `build/Validation`, and verifies the app
+binary is `arm64`.
 
 This repo includes a local release build script:
 
