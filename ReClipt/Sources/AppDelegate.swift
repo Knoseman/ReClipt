@@ -181,7 +181,7 @@ private extension AppDelegate {
         record("preferences-window-title", preferencesWindow?.title == String(localized: "Preferences"))
         record("preferences-window-has-content", preferencesWindow?.contentView?.subviews.isEmpty == false)
         record("preferences-window-size", isUsableWindow(preferencesWindow, minimumSize: NSSize(width: 520, height: 300)))
-        record("preferences-toolbar-tabs-present", preferenceToolbarButtons(in: preferencesWindow).count == 5)
+        record("preferences-toolbar-tabs-present", preferenceToolbarButtons(in: preferencesWindow).count == 6)
         record("preferences-toolbar-tabs-switch", preferenceToolbarButtonsSwitchPanes(in: preferencesWindow))
         record("snippets-window-visible", snippetsWindow?.isVisible == true)
         record("snippets-window-title", snippetsWindow?.title == String(localized: "Edit Snippets"))

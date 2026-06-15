@@ -170,6 +170,7 @@ private extension MenuManager {
 // MARK: - Menus
 private extension MenuManager {
      func createMainMenu() {
+        snippetFolderDetails = snippetRepository.fetchFolderDetails()
         mainMenu = NSMenu(title: Constants.Application.name)
         mainMenu?.delegate = self
         historyMenu = NSMenu(title: Constants.Menu.history)
@@ -586,6 +587,11 @@ private struct HistorySubmenuInfo {
 extension MenuManager {
     func testBuildMenus() {
         snippetFolderDetails = snippetRepository.fetchFolderDetails()
+        createMainMenu()
+    }
+
+    func testBuildMenusWithStaleSnippetCache() {
+        snippetFolderDetails = []
         createMainMenu()
     }
 

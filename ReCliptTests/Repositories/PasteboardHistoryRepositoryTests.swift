@@ -85,6 +85,27 @@ struct PasteboardHistoryRepositoryTests {
     }
 
     @Test
+    func deleteAllKeepsSnippets() throws {
+        try TestSQLiteStore.withCleanStore {
+            let historyRepository = PasteboardHistoryRepository()
+            let snippetRepository = SnippetRepository()
+            let content = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Test".utf8))])
+            )
+            let folder = try #require(snippetRepository.insertFolder())
+            snippetRepository.updateFolderTitle(folder.id, title: "Saved snippets")
+            let snippet = try #require(snippetRepository.insertSnippet(to: folder.id))
+            snippetRepository.updateSnippetTitle(snippet.id, title: "Snippet survives")
+            historyRepository.save(id: "all-test", content: content, updateAt: 3000)
+
+            historyRepository.deleteAll()
+
+            #expect(!historyRepository.hasHistories())
+            #expect(snippetRepository.fetchFolderDetail(id: folder.id)?.snippets.map(\.title) == ["Snippet survives"])
+        }
+    }
+
+    @Test
     func fetchHistoryDetailsHonorsOrderingLimitAndOffset() throws {
         try TestSQLiteStore.withCleanStore {
             let repository = PasteboardHistoryRepository()
@@ -353,6 +374,37 @@ struct PasteboardHistoryRepositoryTests {
             #expect(historyFolderItem.image != nil)
             #expect(snippetFolderItem.image != nil)
             #expect(snippetItem.image != nil)
+        }
+    }
+
+    @Test
+    func menuRebuildAfterClearingHistoryKeepsSnippetsVisible() throws {
+        try TestSQLiteStore.withCleanStore {
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuRebuildAfterClearingHistoryKeepsSnippetsVisible",
+                inlineItems: 2,
+                itemsPerFolder: 10,
+                maxHistorySize: 10,
+                showIcons: false,
+                showNumbers: false,
+                enableNumericShortcuts: false
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuRebuildAfterClearingHistoryKeepsSnippetsVisible") }
+
+            let snippetRepository = SnippetRepository()
+            let folder = try #require(snippetRepository.insertFolder())
+            snippetRepository.updateFolderTitle(folder.id, title: "Snippets")
+            let snippet = try #require(snippetRepository.insertSnippet(to: folder.id))
+            snippetRepository.updateSnippetTitle(snippet.id, title: "Snippet One")
+            try saveHistories(titles: ["Temporary history"])
+            PasteboardHistoryRepository().deleteAll()
+
+            let menuManager = MenuManager()
+            menuManager.testBuildMenusWithStaleSnippetCache()
+
+            let mainMenu = try #require(menuManager.testMainMenu)
+            let snippetFolderItem = try #require(mainMenu.items.first { $0.title == "Snippets" })
+            #expect(snippetFolderItem.submenu?.items.map(\.title) == ["Snippet One"])
         }
     }
 
