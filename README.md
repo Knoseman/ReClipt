@@ -177,6 +177,7 @@ Expected output:
 
 ```text
 build/Build/Products/Release/ReClipt-macOS.zip
+build/Build/Products/Release/ReClipt-macOS.zip.sha256
 ```
 
 ### Notarized Public Release
