@@ -119,17 +119,23 @@ trap 'rm -f "$NOTES_FILE"' EXIT
   echo "Self-signed ad-hoc macOS release for ReClipt $VERSION."
   echo
   echo "This build is not Apple-notarized. macOS Gatekeeper may warn or block it on first launch."
-  echo "If right-click > Open does not work after copying the app to /Applications, remove quarantine with:"
   echo
-  echo '```bash'
-  echo 'xattr -dr com.apple.quarantine /Applications/ReClipt.app'
-  echo '```'
+  echo "Install guide:"
+  echo "https://github.com/Knoseman/ReClipt/blob/$TAG/docs/INSTALL_SELF_SIGNED.md"
   echo
   echo "Verify the download with:"
   echo
   echo '```bash'
   echo 'shasum -a 256 -c ReClipt-macOS.zip.sha256'
   echo '```'
+  echo
+  echo "If right-click > Open does not work after copying the app to /Applications, remove quarantine with:"
+  echo
+  echo '```bash'
+  echo 'xattr -dr com.apple.quarantine /Applications/ReClipt.app'
+  echo '```'
+  echo
+  echo "ReClipt is a menu bar app and does not appear in the Dock. Enable it in System Settings > Privacy & Security > Accessibility if paste from history or snippets does not work, then quit and reopen ReClipt."
 } > "$NOTES_FILE"
 
 if gh release view "$TAG" >/dev/null 2>&1; then
