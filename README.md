@@ -5,6 +5,9 @@ ReClipt is a macOS clipboard history and snippets app.
 The current codebase is being updated around a native macOS app target, local
 SQLite storage, programmatic AppKit views, and a simplified dependency surface.
 
+For installing a downloaded self-signed release, see
+[Installing the Self-Signed ReClipt Release](docs/INSTALL_SELF_SIGNED.md).
+
 ## Requirements
 
 - macOS 26 or later
@@ -129,6 +132,9 @@ not work, users can remove the quarantine flag after copying the app to
 ```bash
 xattr -dr com.apple.quarantine /Applications/ReClipt.app
 ```
+
+For tester install steps, use
+[the self-signed install guide](docs/INSTALL_SELF_SIGNED.md).
 
 Before publishing an ad-hoc release, run the full release validation pass:
 
