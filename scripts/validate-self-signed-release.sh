@@ -8,6 +8,7 @@ CONFIGURATION="${CONFIGURATION:-Release}"
 PRODUCTS_DIR="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION"
 APP_PATH="$PRODUCTS_DIR/ReClipt.app"
 ZIP_PATH="$PRODUCTS_DIR/ReClipt-macOS.zip"
+CHECKSUM_PATH="$ZIP_PATH.sha256"
 
 cd "$ROOT_DIR"
 
@@ -34,9 +35,24 @@ if [[ ! -s "$ZIP_PATH" ]]; then
   exit 1
 fi
 
+if [[ ! -s "$CHECKSUM_PATH" ]]; then
+  echo "Expected release checksum was not found or is empty:" >&2
+  echo "  $CHECKSUM_PATH" >&2
+  exit 1
+fi
+
+echo
+echo "==> Verifying release checksum"
+(
+  cd "$PRODUCTS_DIR"
+  shasum -a 256 -c "$(basename "$CHECKSUM_PATH")"
+)
+
 echo
 echo "Self-signed release validation succeeded."
 echo "App bundle:"
 echo "  $APP_PATH"
 echo "Release zip:"
 echo "  $ZIP_PATH"
+echo "Checksum:"
+echo "  $CHECKSUM_PATH"

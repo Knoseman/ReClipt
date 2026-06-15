@@ -10,6 +10,7 @@ DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/build}"
 PRODUCTS_DIR="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION"
 APP_PATH="$PRODUCTS_DIR/ReClipt.app"
 ZIP_PATH="$PRODUCTS_DIR/ReClipt-macOS.zip"
+CHECKSUM_PATH="$ZIP_PATH.sha256"
 DEVELOPER_DIR_OUTPUT="$(xcode-select -p 2>/dev/null || true)"
 RELEASE_CLEAN="${RELEASE_CLEAN:-1}"
 
@@ -63,11 +64,18 @@ echo "Verifying ad-hoc signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 codesign -dv --verbose=4 "$APP_PATH" 2>&1 | sed -n '1,36p'
 
-rm -f "$ZIP_PATH"
+rm -f "$ZIP_PATH" "$CHECKSUM_PATH"
 
 echo
 echo "Packaging '$APP_PATH'..."
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+
+echo
+echo "Writing SHA-256 checksum..."
+(
+  cd "$PRODUCTS_DIR"
+  shasum -a 256 "$(basename "$ZIP_PATH")" > "$(basename "$CHECKSUM_PATH")"
+)
 
 echo
 echo "Gatekeeper assessment, expected to reject ad-hoc builds:"
@@ -76,6 +84,8 @@ spctl -a -vv "$APP_PATH" 2>&1 || true
 echo
 echo "Ad-hoc release package:"
 echo "  $ZIP_PATH"
+echo "Checksum:"
+echo "  $CHECKSUM_PATH"
 echo
 echo "Note: this build is not notarized. Users may need to right-click Open,"
 echo "or remove quarantine with:"

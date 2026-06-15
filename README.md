@@ -108,6 +108,7 @@ Expected output:
 
 ```text
 build/Build/Products/Release/ReClipt-macOS.zip
+build/Build/Products/Release/ReClipt-macOS.zip.sha256
 ```
 
 This build is not notarized by Apple. It is suitable for technical testers, but
@@ -127,7 +128,8 @@ Before publishing an ad-hoc release, run the full release validation pass:
 
 This runs the full test suite, builds the ad-hoc release zip, launches the
 built app, verifies the Preferences and Snippets Editor smoke flow, confirms
-menu-bar-only behavior, and checks that the zip was created.
+menu-bar-only behavior, checks that the zip was created, and verifies the
+SHA-256 checksum.
 
 ### Package
 
