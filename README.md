@@ -56,8 +56,8 @@ Notes:
 
 ### Manual App Validation
 
-After `./scripts/validate.sh` succeeds, build the normal locally signed Release
-app and run the app-level smoke test:
+After `./scripts/validate.sh` succeeds, build a signed Release app and run the
+app-level smoke test:
 
 ```bash
 ./scripts/build-release.sh
@@ -65,12 +65,12 @@ app and run the app-level smoke test:
 SMOKE_UI_FLOW=1 ./scripts/smoke-app.sh
 ```
 
-This builds the normal locally signed Release app, verifies the app bundle,
-confirms ReClipt is configured as a menu bar app without a Dock icon, checks the
-signature, launches it, checks that it remains running briefly, then quits it. It
-intentionally quits any already-running ReClipt instance first so each run starts
-from a fresh app process. This matters because Accessibility permissions are tied
-to the app's signed identity.
+This builds a signed Release app, verifies the app bundle, confirms ReClipt is
+configured as a menu bar app without a Dock icon, checks the signature, launches
+it, checks that it remains running briefly, then quits it. It intentionally quits
+any already-running ReClipt instance first so each run starts from a fresh app
+process. This matters because Accessibility permissions are tied to the app's
+signed identity.
 
 `SMOKE_UI_FLOW=1` adds an app-level window check: ReClipt launches with an
 internal smoke argument, opens Preferences and Snippets Editor, verifies those
@@ -114,6 +114,16 @@ not work, users can remove the quarantine flag after copying the app to
 ```bash
 xattr -dr com.apple.quarantine /Applications/ReClipt.app
 ```
+
+Before publishing an ad-hoc release, run the full release validation pass:
+
+```bash
+./scripts/validate-self-signed-release.sh
+```
+
+This runs the full test suite, builds the ad-hoc release zip, launches the
+built app, verifies the Preferences and Snippets Editor smoke flow, confirms
+menu-bar-only behavior, and checks that the zip was created.
 
 ### Package
 
