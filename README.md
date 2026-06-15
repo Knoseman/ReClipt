@@ -100,6 +100,16 @@ The no-subscription release path is an ad-hoc signed zip:
 ./scripts/build-self-signed-release.sh
 ```
 
+Before preparing a new public release, bump the app version:
+
+```bash
+./scripts/bump-version.sh 1.2.1
+```
+
+This updates both `CFBundleShortVersionString` and `CFBundleVersion` in
+`ReClipt/Supporting Files/Info.plist`. The publish script uses that version to
+derive the default GitHub tag.
+
 The script runs a clean Release build by default so the packaged app is fresh
 even when there are no source changes. For faster local iteration only, set
 `RELEASE_CLEAN=0`.
