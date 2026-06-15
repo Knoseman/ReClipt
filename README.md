@@ -100,6 +100,10 @@ The no-subscription release path is an ad-hoc signed zip:
 ./scripts/build-self-signed-release.sh
 ```
 
+The script runs a clean Release build by default so the packaged app is fresh
+even when there are no source changes. For faster local iteration only, set
+`RELEASE_CLEAN=0`.
+
 Expected output:
 
 ```text

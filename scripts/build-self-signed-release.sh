@@ -11,6 +11,9 @@ PRODUCTS_DIR="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION"
 APP_PATH="$PRODUCTS_DIR/ReClipt.app"
 ZIP_PATH="$PRODUCTS_DIR/ReClipt-macOS.zip"
 DEVELOPER_DIR_OUTPUT="$(xcode-select -p 2>/dev/null || true)"
+RELEASE_CLEAN="${RELEASE_CLEAN:-1}"
+
+typeset -a XCODEBUILD_ACTION_PREFIX
 
 if [[ ! -d "$PROJECT_PATH" ]]; then
   echo "Project not found: $PROJECT_PATH" >&2
@@ -29,6 +32,10 @@ if [[ "$DEVELOPER_DIR_OUTPUT" == "/Library/Developer/CommandLineTools" ]]; then
   exit 1
 fi
 
+if [[ "$RELEASE_CLEAN" == "1" ]]; then
+  XCODEBUILD_ACTION_PREFIX+=(clean)
+fi
+
 echo "Building ad-hoc signed release..."
 xcodebuild \
   -project "$PROJECT_PATH" \
@@ -42,6 +49,7 @@ xcodebuild \
   DEVELOPMENT_TEAM= \
   PROVISIONING_PROFILE_SPECIFIER= \
   ENABLE_HARDENED_RUNTIME=YES \
+  "${XCODEBUILD_ACTION_PREFIX[@]}" \
   build
 
 if [[ ! -d "$APP_PATH" ]]; then
