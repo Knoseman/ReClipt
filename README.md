@@ -136,6 +136,9 @@ xattr -dr com.apple.quarantine /Applications/ReClipt.app
 For tester install steps, use
 [the self-signed install guide](docs/INSTALL_SELF_SIGNED.md).
 
+Before tagging a release, use
+[the release checklist](docs/RELEASE_CHECKLIST.md).
+
 Before publishing an ad-hoc release, run the full release validation pass:
 
 ```bash
