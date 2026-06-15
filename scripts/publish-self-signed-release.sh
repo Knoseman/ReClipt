@@ -26,6 +26,24 @@ require_command() {
 require_command gh
 require_command git
 require_command shasum
+require_command awk
+
+remote_tag_commit_sha() {
+  local tag="$1"
+  local lines peeled_sha tag_sha
+
+  lines="$(git ls-remote --tags origin "refs/tags/$tag" "refs/tags/$tag^{}")"
+  [[ -n "$lines" ]] || return 0
+
+  peeled_sha="$(printf "%s\n" "$lines" | awk -v ref="refs/tags/$tag^{}" '$2 == ref { print $1; exit }')"
+  if [[ -n "$peeled_sha" ]]; then
+    printf "%s" "$peeled_sha"
+    return 0
+  fi
+
+  tag_sha="$(printf "%s\n" "$lines" | awk -v ref="refs/tags/$tag" '$2 == ref { print $1; exit }')"
+  printf "%s" "$tag_sha"
+}
 
 [[ -f "$INFO_PLIST" ]] || fail "Info.plist not found: $INFO_PLIST"
 
@@ -58,14 +76,26 @@ UPSTREAM_REF="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/nu
 UPSTREAM_SHA="$(git rev-parse '@{u}')"
 [[ "$CURRENT_SHA" == "$UPSTREAM_SHA" ]] || fail "HEAD does not match upstream $UPSTREAM_REF; push first"
 
+REMOTE_TAG_SHA="$(remote_tag_commit_sha "$TAG")"
+TAG_NEEDS_PUSH=0
+
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
   TAG_SHA="$(git rev-list -n 1 "$TAG")"
   [[ "$TAG_SHA" == "$CURRENT_SHA" ]] || fail "local tag $TAG points at $TAG_SHA, not HEAD $CURRENT_SHA; bump Info.plist or set RELEASE_TAG before publishing a new release"
+  if [[ -n "$REMOTE_TAG_SHA" ]]; then
+    [[ "$REMOTE_TAG_SHA" == "$CURRENT_SHA" ]] || fail "remote tag $TAG points at $REMOTE_TAG_SHA, not HEAD $CURRENT_SHA; bump Info.plist or set RELEASE_TAG before publishing a new release"
+  else
+    TAG_NEEDS_PUSH=1
+  fi
+elif [[ -n "$REMOTE_TAG_SHA" ]]; then
+  [[ "$REMOTE_TAG_SHA" == "$CURRENT_SHA" ]] || fail "remote tag $TAG points at $REMOTE_TAG_SHA, not HEAD $CURRENT_SHA; bump Info.plist or set RELEASE_TAG before publishing a new release"
+  echo "Remote tag $TAG already points at HEAD."
 else
   echo "Creating local tag $TAG at $CURRENT_SHA..."
   if [[ "$PUBLISH_DRY_RUN" == "0" ]]; then
     git tag -a "$TAG" -m "ReClipt $VERSION"
   fi
+  TAG_NEEDS_PUSH=1
 fi
 
 if [[ "$PUBLISH_DRY_RUN" == "1" ]]; then
@@ -78,7 +108,9 @@ if [[ "$PUBLISH_DRY_RUN" == "1" ]]; then
   exit 0
 fi
 
-git push origin "$TAG"
+if [[ "$TAG_NEEDS_PUSH" == "1" ]]; then
+  git push origin "$TAG"
+fi
 
 NOTES_FILE="$(mktemp "${TMPDIR:-/tmp}/reclipt-release-notes.XXXXXX")"
 trap 'rm -f "$NOTES_FILE"' EXIT

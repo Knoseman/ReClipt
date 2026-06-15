@@ -150,9 +150,10 @@ To publish the validated ad-hoc artifacts to GitHub Releases, run:
 The publish script uses `CFBundleShortVersionString` from `Info.plist` as the
 default tag, for example `v1.2.0`. It validates the release first, requires the
 tracked worktree to be clean, requires the current commit to be pushed, creates
-the tag if needed, and uploads both the zip and `.sha256` file. If that tag
-already exists for an older commit, bump `Info.plist` before publishing a new
-release. To check what it would publish without changing GitHub, run:
+the tag if needed, checks local and remote tag state, and uploads both the zip
+and `.sha256` file. If that tag already exists for an older commit, bump
+`Info.plist` before publishing a new release. To check what it would publish
+without changing GitHub, run:
 
 ```bash
 PUBLISH_VALIDATE=0 PUBLISH_DRY_RUN=1 ./scripts/publish-self-signed-release.sh
