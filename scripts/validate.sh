@@ -35,6 +35,25 @@ if [[ "$VALIDATE_CLEAN" == "1" ]]; then
   XCODEBUILD_ACTION_PREFIX+=(clean)
 fi
 
+run_test_suite() {
+  xcodebuild \
+    CODE_SIGN_IDENTITY=- \
+    CODE_SIGNING_REQUIRED=NO \
+    CODE_SIGNING_ALLOWED=NO \
+    -scheme "$SCHEME" \
+    -project "$PROJECT_PATH" \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
+    "${XCODEBUILD_PACKAGE_ARGS[@]}" \
+    -skipPackagePluginValidation \
+    -skipMacroValidation \
+    "${XCODEBUILD_ACTION_PREFIX[@]}" \
+    test 2>&1 | tee "$TEST_LOG"
+}
+
+test_log_has_result_bundle_race() {
+  /usr/bin/grep -Eq "Result bundle saving failed|writerNotOpen|log hasn't finished recording" "$TEST_LOG"
+}
+
 if [[ ! -d "$PROJECT_PATH" ]]; then
   echo "Project not found: $PROJECT_PATH" >&2
   exit 1
@@ -55,18 +74,15 @@ fi
 mkdir -p "$LOG_DIR"
 
 echo "Running full test suite..."
-xcodebuild \
-  CODE_SIGN_IDENTITY=- \
-  CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO \
-  -scheme "$SCHEME" \
-  -project "$PROJECT_PATH" \
-  -derivedDataPath "$DERIVED_DATA_PATH" \
-  "${XCODEBUILD_PACKAGE_ARGS[@]}" \
-  -skipPackagePluginValidation \
-  -skipMacroValidation \
-  "${XCODEBUILD_ACTION_PREFIX[@]}" \
-  test 2>&1 | tee "$TEST_LOG"
+if ! run_test_suite; then
+  if [[ -f "$TEST_LOG" ]] && test_log_has_result_bundle_race; then
+    echo
+    echo "Xcode failed while saving the test result bundle; retrying the test suite once..."
+    run_test_suite
+  else
+    exit 1
+  fi
+fi
 
 echo
 echo "Building Release app..."
