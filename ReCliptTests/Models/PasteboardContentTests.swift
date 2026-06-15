@@ -179,6 +179,36 @@ struct PasteboardContentTests {
     }
 
     @Test
+    func fileDisplayTitleUsesModernAndDeprecatedFileURLs() throws {
+        let modernContent = try #require(
+            PasteboardContent(
+                assets: [
+                    fileURLAsset("/tmp/report.pdf")
+                ]
+            )
+        )
+        let deprecatedContent = try #require(
+            PasteboardContent(
+                assets: [
+                    try deprecatedFilenamesAsset(["/tmp/first.txt", "/tmp/second.txt"])
+                ]
+            )
+        )
+        let manyFilesContent = try #require(
+            PasteboardContent(
+                assets: [
+                    try deprecatedFilenamesAsset(["/tmp/one.txt", "/tmp/two.txt", "/tmp/three.txt"])
+                ]
+            )
+        )
+
+        #expect(modernContent.fileDisplayTitle == "report.pdf")
+        #expect(modernContent.historyTitle == "report.pdf")
+        #expect(deprecatedContent.fileDisplayTitle == "first.txt, second.txt")
+        #expect(manyFilesContent.fileDisplayTitle == "one.txt + 2 items")
+    }
+
+    @Test
     func colorCodeImageIsCreatedFromHexString() throws {
         let colorContent = try #require(
             PasteboardContent(
@@ -304,5 +334,12 @@ private func deprecatedFilenamesAsset(_ filenames: [String]) throws -> Pasteboar
             format: .xml,
             options: 0
         )
+    )
+}
+
+private func fileURLAsset(_ path: String) -> PasteboardContent.Asset {
+    PasteboardContent.Asset(
+        type: .fileURL,
+        data: URL(fileURLWithPath: path).dataRepresentation
     )
 }

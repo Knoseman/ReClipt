@@ -30,6 +30,41 @@ struct PasteboardContent: Equatable {
         guard let data = data(for: .string) ?? data(for: .deprecatedString) else { return "" }
         return String(data: data, encoding: .utf8) ?? ""
     }
+    var historyTitle: String {
+        if !stringValue.isEmpty {
+            return stringValue
+        }
+        return fileDisplayTitle ?? ""
+    }
+    var fileDisplayTitle: String? {
+        let fileNames = fileURLs.map(\.lastPathComponent).filter { !$0.isEmpty }
+        guard !fileNames.isEmpty else { return nil }
+
+        if fileNames.count == 1 {
+            return fileNames[0]
+        }
+        if fileNames.count == 2 {
+            return fileNames.joined(separator: ", ")
+        }
+        return "\(fileNames[0]) + \(fileNames.count - 1) items"
+    }
+    var fileURLs: [URL] {
+        let modernURLs = assets
+            .filter { $0.type == .fileURL }
+            .compactMap { URL(dataRepresentation: $0.data, relativeTo: nil) }
+        let deprecatedURLs = assets
+            .filter { $0.type == .deprecatedFilenames }
+            .flatMap { asset -> [URL] in
+                guard let filenames = try? PropertyListSerialization.propertyList(
+                    from: asset.data,
+                    options: [],
+                    format: nil
+                ) as? [String] else { return [] }
+                return filenames.map { URL(fileURLWithPath: $0) }
+            }
+
+        return (modernURLs + deprecatedURLs).deduplicatedByPath
+    }
     var colorCodeImage: NSImage? {
         guard let color = NSColor.hexString(stringValue) else { return nil }
         return NSImage.create(with: color, size: NSSize(width: 20, height: 20))
@@ -175,6 +210,16 @@ private extension [PasteboardContent.Asset] {
     func sorted(by types: [NSPasteboard.PasteboardType]) -> Self {
         types.flatMap { type in
             filter { $0.type == type }
+        }
+    }
+}
+
+private extension [URL] {
+    var deduplicatedByPath: [URL] {
+        var seen = Set<String>()
+        return filter { url in
+            let key = url.standardizedFileURL.path
+            return seen.insert(key).inserted
         }
     }
 }

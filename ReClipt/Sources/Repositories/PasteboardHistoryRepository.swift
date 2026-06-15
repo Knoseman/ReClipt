@@ -250,7 +250,7 @@ final class PasteboardHistoryRepository: PasteboardHistoryRepositoryProtocol {
                 guard sqlite3_prepare_v2(database, historySQL, -1, &historyStmt, nil) == SQLITE_OK else { return }
                 defer { sqlite3_finalize(historyStmt) }
                 SQLiteStore.bindText(historyStmt!, index: 1, value: id)
-                SQLiteStore.bindText(historyStmt!, index: 2, value: content.stringValue.prefix(10000).description)
+                SQLiteStore.bindText(historyStmt!, index: 2, value: content.historyTitle.prefix(10000).description)
                 SQLiteStore.bindText(historyStmt!, index: 3, value: NSPasteboard.PasteboardType.toJSON(content.types))
                 SQLiteStore.bindText(historyStmt!, index: 4, value: ReCliptUtilities.deviceID ?? "")
                 SQLiteStore.bindInt(historyStmt!, index: 5, value: updateAt)

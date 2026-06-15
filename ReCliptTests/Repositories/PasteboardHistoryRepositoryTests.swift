@@ -35,6 +35,25 @@ struct PasteboardHistoryRepositoryTests {
         }
     }
 
+    @Test(.timeLimit(.minutes(1)))
+    func saveUsesFileNameForFileHistoryTitle() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = PasteboardHistoryRepository()
+            let content = try #require(
+                PasteboardContent(
+                    assets: [
+                        fileURLAsset("/tmp/report.pdf")
+                    ]
+                )
+            )
+
+            repository.save(id: "file-id", content: content, updateAt: 1000)
+
+            let history = repository.fetchHistory(id: "file-id")
+            #expect(history?.title == "report.pdf")
+        }
+    }
+
     @Test
     func deleteHistory() throws {
         try TestSQLiteStore.withCleanStore {
@@ -336,6 +355,39 @@ struct PasteboardHistoryRepositoryTests {
             #expect(snippetItem.image != nil)
         }
     }
+
+    @Test
+    func menuManagerShowsFileNamesAndTypeIconsForHistoryItems() throws {
+        try TestSQLiteStore.withCleanStore {
+            let defaults = try pushMenuTestEnvironment(
+                suiteName: "MenuManagerShowsFileNamesAndTypeIconsForHistoryItems",
+                inlineItems: 2,
+                itemsPerFolder: 10,
+                maxHistorySize: 10,
+                showIcons: true,
+                showNumbers: false,
+                enableNumericShortcuts: false
+            )
+            defer { popMenuTestEnvironment(defaults, suiteName: "MenuManagerShowsFileNamesAndTypeIconsForHistoryItems") }
+
+            let repository = PasteboardHistoryRepository()
+            let fileContent = try #require(
+                PasteboardContent(assets: [fileURLAsset("/tmp/report.pdf")])
+            )
+            let textContent = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Plain text".utf8))])
+            )
+            repository.save(id: "file", content: fileContent, updateAt: 1000)
+            repository.save(id: "text", content: textContent, updateAt: 1001)
+
+            let menuManager = MenuManager()
+            menuManager.testBuildMenus()
+
+            let historyItems = try historyItems(in: #require(menuManager.testMainMenu))
+            #expect(historyItems.map(\.title) == ["report.pdf", "Plain text"])
+            #expect(historyItems.allSatisfy { $0.image != nil })
+        }
+    }
 }
 
 private extension PasteboardHistoryRepositoryTests {
@@ -388,5 +440,12 @@ private extension PasteboardHistoryRepositoryTests {
             item.isSeparatorItem || item.submenu != nil || item.action != #selector(AppDelegate.selectHistoryMenuItem(_:))
         } ?? menu.numberOfItems
         return Array(menu.items[(historyLabelIndex + 1)..<firstNonHistoryIndex])
+    }
+
+    func fileURLAsset(_ path: String) -> PasteboardContent.Asset {
+        PasteboardContent.Asset(
+            type: .fileURL,
+            data: URL(fileURLWithPath: path).dataRepresentation
+        )
     }
 }

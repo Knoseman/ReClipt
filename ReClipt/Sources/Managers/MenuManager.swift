@@ -335,7 +335,7 @@ private extension MenuManager {
         }
 
         let primaryPboardType = history.primaryType
-        let clipString = history.title
+        let clipString = historyDisplayTitle(for: history)
         let title = trimTitle(clipString)
         let titleWithMark = menuItemTitle(title, listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
 
@@ -354,7 +354,8 @@ private extension MenuManager {
         } else if primaryPboardType == .pdf || primaryPboardType == .deprecatedPDF {
             menuItem.title = menuItemTitle("(PDF)", listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
         } else if primaryPboardType == .fileURL || primaryPboardType == .deprecatedFilenames {
-            menuItem.title = menuItemTitle("(Files)", listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
+            let fileTitle = clipString.isEmpty ? String(localized: "(Files)") : trimTitle(clipString)
+            menuItem.title = menuItemTitle(fileTitle, listNumber: listNumber, isMarkWithNumber: isMarkWithNumber)
         }
 
         if isShowImage || isShowColorCode,
@@ -364,9 +365,47 @@ private extension MenuManager {
             let width = AppEnvironment.current.defaults.integer(forKey: Constants.UserDefaults.thumbnailWidth)
             let height = AppEnvironment.current.defaults.integer(forKey: Constants.UserDefaults.thumbnailHeight)
             menuItem.image = image.aspectFitImage(CGFloat(width), CGFloat(height))
+        } else if showsMenuItemIcons {
+            menuItem.image = menuIcon(for: primaryPboardType)
         }
 
         return menuItem
+    }
+
+    func historyDisplayTitle(for history: PasteboardHistory) -> String {
+        if !history.title.isEmpty {
+            return history.title
+        }
+        guard history.primaryType == .fileURL || history.primaryType == .deprecatedFilenames,
+              let content = pasteboardHistoryRepository.fetchContent(id: history.id) else {
+            return history.title
+        }
+        return content.fileDisplayTitle ?? history.title
+    }
+
+    func menuIcon(for type: NSPasteboard.PasteboardType?) -> NSImage? {
+        let symbolName: String
+        switch type {
+        case .string, .deprecatedString:
+            symbolName = "text.alignleft"
+        case .rtf, .deprecatedRTF, .rtfd, .deprecatedRTFD:
+            symbolName = "doc.text"
+        case .pdf, .deprecatedPDF:
+            symbolName = "doc.richtext"
+        case .fileURL, .deprecatedFilenames:
+            symbolName = "doc"
+        case .URL, .deprecatedURL:
+            symbolName = "link"
+        case .png, .tiff, .deprecatedTIFF:
+            symbolName = "photo"
+        default:
+            return nil
+        }
+
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+        image?.isTemplate = true
+        image?.size = NSSize(width: 16, height: 16)
+        return image
     }
 }
 
