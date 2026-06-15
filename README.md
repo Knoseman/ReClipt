@@ -1,8 +1,6 @@
 # ReClipt
 
-ReClipt is a macOS clipboard history and snippets app.
-
-The current codebase is being updated around a native macOS app target, local
+ReClipt is a local-only macOS clipboard history and snippets app. It uses local
 SQLite storage, programmatic AppKit views, and a simplified dependency surface.
 
 For installing a downloaded self-signed release, see
@@ -105,10 +103,10 @@ The no-subscription release path is an ad-hoc signed zip:
 ./scripts/build-self-signed-release.sh
 ```
 
-Before preparing a new public release, bump the app version:
+Before preparing a new GitHub Release, bump the app version:
 
 ```bash
-./scripts/bump-version.sh 1.2.1
+./scripts/bump-version.sh x.y.z
 ```
 
 This updates both `CFBundleShortVersionString` and `CFBundleVersion` in
@@ -159,7 +157,7 @@ To publish the validated ad-hoc artifacts to GitHub Releases, run:
 ```
 
 The publish script uses `CFBundleShortVersionString` from `Info.plist` as the
-default tag, for example `v1.2.0`. It validates the release first, requires the
+default tag, for example `v<x.y.z>`. It validates the release first, requires the
 tracked worktree to be clean, requires the current commit to be pushed, creates
 the tag if needed, checks local and remote tag state, and uploads both the zip
 and `.sha256` file. If that tag already exists for an older commit, bump
@@ -231,6 +229,7 @@ ReClipt has been optimized for high-performance clipboard handling and low memor
 - Database migrations and initialization are handled asynchronously.
 - The Swift module name is `ReClipt`.
 - Tests live in `ReCliptTests`.
+- Agent/developer operating rules live in `AGENTS.md`.
 
 ## Privacy
 

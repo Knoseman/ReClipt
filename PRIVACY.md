@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: June 11, 2026
+Last updated: June 15, 2026
 
 ReClipt is a local macOS clipboard history and snippets app. Clipboard data
 can contain sensitive information, so the app is designed to keep clipboard
@@ -13,6 +13,7 @@ history and snippets on the user's Mac.
 - ReClipt does not transmit clipboard contents or snippet contents.
 - ReClipt does not currently include analytics, crash reporting, or automatic
   update services in this source tree.
+- ReClipt does not use CloudKit or multi-device sync in this source tree.
 
 ## Local Data
 
@@ -28,7 +29,8 @@ security controls provided by macOS.
 
 ## Network Communication
 
-ReClipt does not intentionally use network services in this source tree.
+ReClipt does not intentionally use network services in this source tree. The app
+does not sync clipboard history or snippets to iCloud or another backend.
 
 ## Analytics And Diagnostics
 

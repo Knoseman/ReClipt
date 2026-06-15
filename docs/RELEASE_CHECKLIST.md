@@ -1,6 +1,8 @@
 # ReClipt Release Checklist
 
-Use this checklist before publishing a GitHub Release.
+Use this checklist before publishing a GitHub Release. For small patch releases
+where the current installed app was already manually tested, the full manual
+install rehearsal can be skipped. The guarded publish script is still required.
 
 ## Version
 
@@ -8,7 +10,7 @@ Use this checklist before publishing a GitHub Release.
 2. Bump the app version:
 
 ```sh
-./scripts/bump-version.sh 1.2.1
+./scripts/bump-version.sh x.y.z
 ```
 
 3. Commit and push the version change.
@@ -22,7 +24,9 @@ Run the full self-signed release gate:
 ./scripts/validate-self-signed-release.sh
 ```
 
-This must pass before publishing. It runs the test suite, builds the release zip, runs the app smoke flow, verifies menu-bar-only behavior, and checks the SHA-256 file.
+This must pass before publishing. It runs the test suite, builds the release
+zip, runs the app smoke flow, verifies menu-bar-only behavior, and checks the
+SHA-256 file.
 
 ## Artifact Check
 
@@ -48,7 +52,7 @@ ReClipt-macOS.zip: OK
 
 ## Manual Install Check
 
-Test the zip the same way a user will:
+For broad sharing or larger changes, test the zip the same way a user will:
 
 1. Unzip `ReClipt-macOS.zip`.
 2. Move `ReClipt.app` to `/Applications`.
@@ -72,12 +76,14 @@ Confirm the app-level behavior that automation cannot fully prove:
 4. Preferences tabs stay aligned when switching between panes.
 5. Changing Preferences settings affects the app.
 6. Clipboard history captures newly copied text.
-7. Selecting a history item pastes when Accessibility permission is enabled.
-8. Selecting a history item copies or fails gracefully when Accessibility permission is not enabled.
-9. Snippets Editor opens from the menu.
-10. Snippet folders and snippets can be created, renamed, edited, deleted, imported, and exported.
-11. Selecting a snippet pastes when Accessibility permission is enabled.
-12. Quit and reopen ReClipt, then confirm settings and snippets persist.
+7. Finder-copied files show useful file names in history.
+8. Menu item icons/previews follow the Menu preferences.
+9. Selecting a history item pastes when Accessibility permission is enabled.
+10. Selecting a history item copies or fails gracefully when Accessibility permission is not enabled.
+11. Snippets Editor opens from the menu.
+12. Snippet folders and snippets can be created, renamed, edited, deleted, imported, and exported.
+13. Selecting a snippet pastes when Accessibility permission is enabled.
+14. Quit and reopen ReClipt, then confirm settings and snippets persist.
 
 ## Publish
 
@@ -99,4 +105,5 @@ After publishing:
 2. Confirm both assets are attached:
    - `ReClipt-macOS.zip`
    - `ReClipt-macOS.zip.sha256`
-3. Confirm the release notes include the install guide, checksum command, quarantine workaround, and Accessibility reminder.
+3. Confirm the release notes include the install guide, checksum command,
+   quarantine workaround, and Accessibility reminder.

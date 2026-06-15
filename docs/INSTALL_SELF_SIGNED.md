@@ -1,10 +1,13 @@
-# Installing the Self-Signed ReClipt Release
+# Installing ReClipt From GitHub Releases
 
-ReClipt is currently distributed as a self-signed macOS app. macOS will not treat it like a notarized App Store or Developer ID app, but it can still be installed and used.
+ReClipt is currently distributed as a self-signed macOS app through GitHub
+Releases. macOS will not treat it like a notarized App Store or Developer ID
+app, but it can still be installed and used.
 
 ## Download
 
-1. Open the latest GitHub Release.
+1. Open the latest GitHub Release:
+   `https://github.com/Knoseman/ReClipt/releases/latest`
 2. Download both files:
    - `ReClipt-macOS.zip`
    - `ReClipt-macOS.zip.sha256`
@@ -44,7 +47,8 @@ Then open ReClipt again.
 
 ## First Launch
 
-ReClipt is a menu bar app. It should not appear in the Dock.
+ReClipt is a menu bar app. It should not appear in the Dock. Use the menu bar
+icon or configured shortcuts to open ReClipt.
 
 On first launch, macOS may ask for Accessibility permission. ReClipt needs that permission to paste clips and snippets into other apps.
 
@@ -63,3 +67,7 @@ If paste does not work, confirm that the copy of ReClipt in `/Applications` is e
 If nothing appears in the Dock, that is expected. Use the menu bar icon or configured shortcuts.
 
 If the app says it is damaged or cannot be opened, remove the quarantine flag with the `xattr` command above.
+
+If copied Finder files appear in history, ReClipt should show useful file names.
+If you only see generic file labels after updating, quit and reopen the
+installed `/Applications/ReClipt.app`.
