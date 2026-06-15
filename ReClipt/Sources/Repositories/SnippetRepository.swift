@@ -16,10 +16,12 @@ protocol SnippetRepositoryProtocol {
     func fetchFolderDetails() -> [SnippetFolderDetail]
     func searchFolderDetails(query: String) -> [SnippetFolderDetail]
     func fetchFolderDetail(id: SnippetFolder.ID) -> SnippetFolderDetail?
+    func fetchTransferFolders() -> [SnippetTransferFolder]
 
     func insertFolder() -> SnippetFolder?
     func insertFolders(_ folders: [(title: String, snippets: [(title: String, content: String)])]) -> [SnippetFolderDetail]?
     func insertTransferFolders(_ folders: [SnippetTransferFolder]) -> [SnippetFolderDetail]?
+    func restoreTransferFolders(_ folders: [SnippetTransferFolder]) throws -> [SnippetFolderDetail]
     func updateFolderTitle(_ id: SnippetFolder.ID, title: String)
     func updateFolderIsEnabled(_ id: SnippetFolder.ID, isEnabled: Bool)
     func updateFolderIndexes(_ folderIDs: [SnippetFolder.ID])
@@ -33,6 +35,32 @@ protocol SnippetRepositoryProtocol {
     func updateSnippetIndexes(_ snippetIDs: [Snippet.ID])
     func moveSnippet(_ id: Snippet.ID, to folderID: SnippetFolder.ID, snippetIDs: [Snippet.ID])
     func deleteSnippet(_ id: Snippet.ID)
+}
+
+extension SnippetRepositoryProtocol {
+    func fetchTransferFolders() -> [SnippetTransferFolder] {
+        fetchFolderDetails().map { detail in
+            SnippetTransferFolder(
+                id: detail.folder.id,
+                title: detail.folder.title,
+                index: detail.folder.index,
+                isEnabled: detail.folder.isEnabled,
+                snippets: detail.snippets.map { snippet in
+                    SnippetTransferSnippet(
+                        id: snippet.id,
+                        title: snippet.title,
+                        content: snippet.content,
+                        index: snippet.index,
+                        isEnabled: snippet.isEnabled
+                    )
+                }
+            )
+        }
+    }
+
+    func restoreTransferFolders(_ folders: [SnippetTransferFolder]) throws -> [SnippetFolderDetail] {
+        throw SQLiteStoreError.unknown("restoreTransferFolders is not implemented")
+    }
 }
 
 final class SnippetRepository: SnippetRepositoryProtocol {
@@ -101,6 +129,26 @@ final class SnippetRepository: SnippetRepositoryProtocol {
             }
         } catch {
             return nil
+        }
+    }
+
+    func fetchTransferFolders() -> [SnippetTransferFolder] {
+        fetchFolderDetails().map { detail in
+            SnippetTransferFolder(
+                id: detail.folder.id,
+                title: detail.folder.title,
+                index: detail.folder.index,
+                isEnabled: detail.folder.isEnabled,
+                snippets: detail.snippets.map { snippet in
+                    SnippetTransferSnippet(
+                        id: snippet.id,
+                        title: snippet.title,
+                        content: snippet.content,
+                        index: snippet.index,
+                        isEnabled: snippet.isEnabled
+                    )
+                }
+            )
         }
     }
 
@@ -234,6 +282,62 @@ final class SnippetRepository: SnippetRepositoryProtocol {
         } catch {
             return nil
         }
+    }
+
+    func restoreTransferFolders(_ folders: [SnippetTransferFolder]) throws -> [SnippetFolderDetail] {
+        guard !folders.isEmpty else { return [] }
+
+        var restoredFolderIDs = [SnippetFolder.ID]()
+        try store.write { database in
+            let lastIndex = fetchMaxFolderIndex(database: database)
+            for (folderOffset, folderData) in folders.enumerated() {
+                let folderID = folderData.id ?? UUID()
+                let folderIndex = folderData.index ?? (lastIndex + folderOffset + 1)
+                let folderSQL = """
+                    INSERT INTO snippetFolders (id, title, "index", isEnabled)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        title = excluded.title,
+                        "index" = excluded."index",
+                        isEnabled = excluded.isEnabled
+                """
+                let folderStmt = try prepare(database, sql: folderSQL)
+                defer { sqlite3_finalize(folderStmt) }
+                SQLiteStore.bindText(folderStmt, index: 1, value: folderID.uuidString)
+                SQLiteStore.bindText(folderStmt, index: 2, value: folderData.title)
+                SQLiteStore.bindInt(folderStmt, index: 3, value: folderIndex)
+                SQLiteStore.bindInt(folderStmt, index: 4, value: folderData.isEnabled ? 1 : 0)
+                try stepDone(folderStmt, database: database)
+
+                let lastSnippetIndex = fetchMaxSnippetIndex(database: database, folderID: folderID)
+                for (snippetOffset, snippetData) in folderData.snippets.enumerated() {
+                    let snippetID = snippetData.id ?? UUID()
+                    let snippetIndex = snippetData.index ?? (lastSnippetIndex + snippetOffset + 1)
+                    let snippetSQL = """
+                        INSERT INTO snippets (id, folderID, title, content, "index", isEnabled)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            folderID = excluded.folderID,
+                            title = excluded.title,
+                            content = excluded.content,
+                            "index" = excluded."index",
+                            isEnabled = excluded.isEnabled
+                    """
+                    let snippetStmt = try prepare(database, sql: snippetSQL)
+                    defer { sqlite3_finalize(snippetStmt) }
+                    SQLiteStore.bindText(snippetStmt, index: 1, value: snippetID.uuidString)
+                    SQLiteStore.bindText(snippetStmt, index: 2, value: folderID.uuidString)
+                    SQLiteStore.bindText(snippetStmt, index: 3, value: snippetData.title)
+                    SQLiteStore.bindText(snippetStmt, index: 4, value: snippetData.content)
+                    SQLiteStore.bindInt(snippetStmt, index: 5, value: snippetIndex)
+                    SQLiteStore.bindInt(snippetStmt, index: 6, value: snippetData.isEnabled ? 1 : 0)
+                    try stepDone(snippetStmt, database: database)
+                }
+                restoredFolderIDs.append(folderID)
+            }
+        }
+        NotificationCenter.default.post(name: Self.snippetsDidChangeNotification, object: nil)
+        return restoredFolderIDs.compactMap { fetchFolderDetail(id: $0) }
     }
 
     func updateFolderTitle(_ id: SnippetFolder.ID, title: String) {
@@ -615,6 +719,21 @@ final class SnippetRepository: SnippetRepositoryProtocol {
         guard sqlite3_step(statement) == SQLITE_ROW else { return -1 }
         guard sqlite3_column_type(statement, 0) != SQLITE_NULL else { return -1 }
         return SQLiteStore.columnInt(statement!, index: 0)
+    }
+
+    private func prepare(_ database: OpaquePointer, sql: String) throws -> OpaquePointer {
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            throw SQLiteStoreError.prepareFailed(String(cString: sqlite3_errmsg(database)))
+        }
+        return statement
+    }
+
+    private func stepDone(_ statement: OpaquePointer, database: OpaquePointer) throws {
+        let result = sqlite3_step(statement)
+        guard result == SQLITE_DONE else {
+            throw SQLiteStoreError.stepFailed(String(cString: sqlite3_errmsg(database)))
+        }
     }
 
     private func parseFolder(_ statement: OpaquePointer) -> SnippetFolder {

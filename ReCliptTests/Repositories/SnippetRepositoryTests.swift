@@ -242,4 +242,142 @@ struct SnippetRepositoryTests {
             #expect(repository.searchFolderDetails(query: "common").isEmpty)
         }
     }
+
+    @Test
+    func fetchTransferFoldersPreservesIdsIndexesAndEnabledState() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = SnippetRepository()
+            let folderID = UUID()
+            let snippetID = UUID()
+            _ = try repository.restoreTransferFolders([
+                SnippetTransferFolder(
+                    id: folderID,
+                    title: "Backup",
+                    index: 7,
+                    isEnabled: false,
+                    snippets: [
+                        SnippetTransferSnippet(
+                            id: snippetID,
+                            title: "Token",
+                            content: "secret",
+                            index: 2,
+                            isEnabled: false
+                        )
+                    ]
+                )
+            ])
+
+            let transferFolders = repository.fetchTransferFolders()
+
+            #expect(transferFolders.count == 1)
+            #expect(transferFolders.first?.id == folderID)
+            #expect(transferFolders.first?.title == "Backup")
+            #expect(transferFolders.first?.index == 7)
+            #expect(transferFolders.first?.isEnabled == false)
+            #expect(transferFolders.first?.snippets.first?.id == snippetID)
+            #expect(transferFolders.first?.snippets.first?.index == 2)
+            #expect(transferFolders.first?.snippets.first?.isEnabled == false)
+        }
+    }
+
+    @Test
+    func restoreTransferFoldersUpsertsWithoutDeletingExistingDataAndPostsNotification() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = SnippetRepository()
+            let existingFolder = try #require(repository.insertFolder())
+            repository.updateFolderTitle(existingFolder.id, title: "Keep me")
+            let folderID = UUID()
+            let snippetID = UUID()
+            var didNotify = false
+            let token = NotificationCenter.default.addObserver(
+                forName: SnippetRepository.snippetsDidChangeNotification,
+                object: nil,
+                queue: nil
+            ) { _ in
+                didNotify = true
+            }
+            defer { NotificationCenter.default.removeObserver(token) }
+
+            _ = try repository.restoreTransferFolders([
+                SnippetTransferFolder(
+                    id: folderID,
+                    title: "Initial",
+                    index: 4,
+                    isEnabled: true,
+                    snippets: [
+                        SnippetTransferSnippet(id: snippetID, title: "Old", content: "old", index: 5, isEnabled: true)
+                    ]
+                )
+            ])
+            let localSnippet = try #require(repository.insertSnippet(to: folderID))
+            repository.updateSnippetTitle(localSnippet.id, title: "Local")
+            _ = try repository.restoreTransferFolders([
+                SnippetTransferFolder(
+                    id: folderID,
+                    title: "Updated",
+                    index: 1,
+                    isEnabled: false,
+                    snippets: [
+                        SnippetTransferSnippet(id: snippetID, title: "New", content: "new", index: 0, isEnabled: false)
+                    ]
+                )
+            ])
+
+            let allDetails = repository.fetchFolderDetails()
+            let restored = try #require(repository.fetchFolderDetail(id: folderID))
+            #expect(allDetails.contains { $0.folder.id == existingFolder.id })
+            #expect(allDetails.filter { $0.folder.id == folderID }.count == 1)
+            #expect(restored.folder.title == "Updated")
+            #expect(restored.folder.index == 1)
+            #expect(!restored.folder.isEnabled)
+            let restoredSnippet = try #require(restored.snippets.first { $0.id == snippetID })
+            #expect(restored.snippets.contains { $0.id == localSnippet.id })
+            #expect(restoredSnippet.title == "New")
+            #expect(restoredSnippet.content == "new")
+            #expect(restoredSnippet.index == 0)
+            #expect(!restoredSnippet.isEnabled)
+            #expect(didNotify)
+        }
+    }
+
+    @Test
+    func settingsRestoreIgnoresUnknownKeysAndRestoresExcludedApplications() throws {
+        let suiteName = "SettingsRestoreIgnoresUnknownKeys"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        BackupSettingsRestoreHelper.restore(
+            BackupSettings(
+                bools: [
+                    Constants.UserDefaults.showIconInTheMenu: false,
+                    "unknown-bool": true
+                ],
+                integers: [
+                    Constants.UserDefaults.maxHistorySize: 42,
+                    "unknown-int": 9
+                ],
+                strings: ["unknown-string": "value"],
+                stringArrays: ["unknown-array": ["value"]],
+                excludedApplications: [
+                    BackupExcludedApplication(identifier: "com.example.Editor", name: "Editor")
+                ]
+            ),
+            to: defaults
+        )
+
+        let data = try #require(defaults.data(forKey: Constants.UserDefaults.excludeApplications))
+        let applications = try #require(try NSKeyedUnarchiver.unarchivedObject(
+            ofClasses: [NSArray.self, ReCliptAppInfo.self, NSString.self],
+            from: data
+        ) as? [ReCliptAppInfo])
+        #expect(defaults.bool(forKey: Constants.UserDefaults.showIconInTheMenu) == false)
+        #expect(defaults.integer(forKey: Constants.UserDefaults.maxHistorySize) == 42)
+        #expect(defaults.object(forKey: "unknown-bool") == nil)
+        #expect(defaults.object(forKey: "unknown-int") == nil)
+        #expect(defaults.object(forKey: "unknown-string") == nil)
+        #expect(defaults.object(forKey: "unknown-array") == nil)
+        #expect(applications.map(\.identifier) == ["com.example.Editor"])
+        #expect(applications.map(\.name) == ["Editor"])
+    }
 }

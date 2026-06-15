@@ -911,6 +911,70 @@
     },
     "Write snippet content here.": {
     },
+    "App version: %@": {
+    },
+    "Backup": {
+    },
+    "Backup exported": {
+    },
+    "Backup failed": {
+    },
+    "Backup restored": {
+    },
+    "Backup service is not available yet.": {
+    },
+    "Choose a .recliptbackup file, review its contents, then select what to restore.": {
+    },
+    "Clipboard history: not included": {
+    },
+    "Clipboard history can contain private content. Include it only when needed.": {
+    },
+    "Clipboard history can contain private content. Only restore it from backup files you trust.": {
+    },
+    "Clipboard history items: %d": {
+    },
+    "Create a local backup file. ReClipt does not upload your data.": {
+    },
+    "Export": {
+    },
+    "Export Backup": {
+    },
+    "Export Backup…": {
+    },
+    "Exported: %@": {
+    },
+    "Restore": {
+    },
+    "Restore Backup": {
+    },
+    "Restore Backup…": {
+    },
+    "Restore History": {
+    },
+    "Restore clipboard history?": {
+    },
+    "Review the backup contents before restoring.": {
+    },
+    "Select at least one section to export.": {
+    },
+    "Select at least one section to restore.": {
+    },
+    "Settings": {
+    },
+    "Settings: included": {
+    },
+    "Settings: not included": {
+    },
+    "Snippets": {
+    },
+    "Snippets: %d": {
+    },
+    "Snippets: not included": {
+    },
+    "Your ReClipt backup was saved.": {
+    },
+    "Your selected ReClipt data was restored.": {
+    },
     "chars": {
     },
     "items": {

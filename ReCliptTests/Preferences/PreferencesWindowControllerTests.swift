@@ -26,7 +26,8 @@ struct PreferencesWindowControllerTests {
             "Layout",
             "Clipboard Types",
             "Excluded Applications",
-            "Main Menu:"
+            "Main Menu:",
+            "Export Backup"
         ]
 
         for (index, label) in expectedPaneLabels.enumerated() {
@@ -47,7 +48,7 @@ struct PreferencesWindowControllerTests {
         let initialButtonFrames = try preferenceTabButtons(in: contentView)
             .map(\.frame)
 
-        for index in 0..<5 {
+        for index in 0..<6 {
             let button = try preferenceTabButton(in: contentView, tag: index)
             button.sendAction(button.action, to: button.target)
 
@@ -161,6 +162,85 @@ struct PreferencesWindowControllerTests {
     }
 
     @Test
+    func backupPaneAppearsInToolbar() throws {
+        let controller = makePreferencesWindowController()
+        defer { controller.close() }
+        let contentView = try #require(controller.window?.contentView)
+
+        let button = try preferenceTabButton(in: contentView, tag: 5)
+        button.sendAction(button.action, to: button.target)
+
+        #expect(contentView.descendantLabels().contains("Export Backup"))
+        #expect(contentView.descendantLabels().contains("Restore Backup"))
+    }
+
+    @Test
+    func backupPaneControlsExistAndDefaultToSafeStates() throws {
+        let view = BackupPreferenceViewController().view
+        let settingsCheckbox = try preferenceCheckbox(in: view, identifier: BackupPreferenceControlIdentifier.exportSettingsCheckbox.rawValue)
+        let snippetsCheckbox = try preferenceCheckbox(in: view, identifier: BackupPreferenceControlIdentifier.exportSnippetsCheckbox.rawValue)
+        let historyCheckbox = try preferenceCheckbox(in: view, identifier: BackupPreferenceControlIdentifier.exportHistoryCheckbox.rawValue)
+        _ = try preferenceButton(in: view, identifier: BackupPreferenceControlIdentifier.exportButton.rawValue)
+        _ = try preferenceButton(in: view, identifier: BackupPreferenceControlIdentifier.restoreButton.rawValue)
+
+        #expect(settingsCheckbox.state == .on)
+        #expect(snippetsCheckbox.state == .on)
+        #expect(historyCheckbox.state == .off)
+        #expect(view.descendantLabels().contains("Clipboard history can contain private content. Include it only when needed."))
+    }
+
+    @Test
+    func backupExportPassesSelectedSectionsToInjectedService() throws {
+        let service = FakePreferencesBackupService()
+        let dialogs = FakePreferencesBackupDialogs()
+        dialogs.exportURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Export.recliptbackup")
+        let viewController = BackupPreferenceViewController(service: service, dialogProvider: dialogs)
+        let view = viewController.view
+        let exportButton = try preferenceButton(in: view, identifier: BackupPreferenceControlIdentifier.exportButton.rawValue)
+
+        exportButton.sendAction(exportButton.action, to: exportButton.target)
+
+        #expect(service.exportedURL == dialogs.exportURL)
+        #expect(service.exportedSections == [.settings, .snippets])
+        #expect(dialogs.successMessages == ["Backup exported"])
+    }
+
+    @Test
+    func backupRestorePreviewsConfirmsHistoryAndRestoresSelectedSections() throws {
+        let service = FakePreferencesBackupService()
+        let dialogs = FakePreferencesBackupDialogs()
+        let restoreURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Restore.recliptbackup")
+        let preview = PreferencesBackupPreview(
+            appVersion: "1.2.3",
+            exportedAt: Date(timeIntervalSince1970: 100),
+            includesSettings: true,
+            includesSnippets: true,
+            snippetCount: 4,
+            includesHistory: true,
+            historyCount: 7
+        )
+        service.preview = preview
+        dialogs.restoreURL = restoreURL
+        dialogs.restoreSections = [.settings, .history]
+        dialogs.confirmHistory = true
+        let viewController = BackupPreferenceViewController(service: service, dialogProvider: dialogs)
+        let view = viewController.view
+        let restoreButton = try preferenceButton(in: view, identifier: BackupPreferenceControlIdentifier.restoreButton.rawValue)
+
+        let historyNotification = try waitForNotification(name: PasteboardHistoryRepository.historyDidChangeNotification) {
+            restoreButton.sendAction(restoreButton.action, to: restoreButton.target)
+        }
+
+        #expect(service.previewedURL == restoreURL)
+        #expect(dialogs.previewForRestore == preview)
+        #expect(dialogs.didConfirmHistory)
+        #expect(service.restoredURL == restoreURL)
+        #expect(service.restoredSections == [.settings, .history])
+        #expect(historyNotification.name == PasteboardHistoryRepository.historyDidChangeNotification)
+        #expect(dialogs.successMessages == ["Backup restored"])
+    }
+
+    @Test
     func typePaneReflectsAndWritesStoreTypeDefaults() throws {
         let defaults = try pushPreferencesTestEnvironment("TypePaneReflectsAndWritesStoreTypeDefaults")
         defer { popPreferencesTestEnvironment(defaults, suiteName: "TypePaneReflectsAndWritesStoreTypeDefaults") }
@@ -206,9 +286,9 @@ private extension PreferencesWindowControllerTests {
 
     func preferenceTabButtons(in view: NSView) throws -> [NSButton] {
         let buttons = view.descendantControls(ofType: NSButton.self)
-            .filter { $0.title.isEmpty && !$0.isBordered && $0.tag >= 0 && $0.tag < 5 && $0.action != nil }
+            .filter { $0.title.isEmpty && !$0.isBordered && $0.tag >= 0 && $0.tag < 6 && $0.action != nil }
             .sorted { $0.tag < $1.tag }
-        #expect(buttons.count == 5)
+        #expect(buttons.count == 6)
         return buttons
     }
 
@@ -234,6 +314,26 @@ private extension PreferencesWindowControllerTests {
             selector: #selector(NotificationRecorder.record(_:)),
             name: UserDefaults.didChangeNotification,
             object: object
+        )
+        defer {
+            NotificationCenter.default.removeObserver(recorder)
+        }
+
+        action()
+
+        return try #require(recorder.notification)
+    }
+
+    func waitForNotification(
+        name: Notification.Name,
+        action: () -> Void
+    ) throws -> Notification {
+        let recorder = NotificationRecorder()
+        NotificationCenter.default.addObserver(
+            recorder,
+            selector: #selector(NotificationRecorder.record(_:)),
+            name: name,
+            object: nil
         )
         defer {
             NotificationCenter.default.removeObserver(recorder)
@@ -270,6 +370,74 @@ private extension PreferencesWindowControllerTests {
             return popup
         }
         return try #require(nil as NSPopUpButton?)
+    }
+
+    func preferenceButton(in view: NSView, identifier: String) throws -> NSButton {
+        for button in view.descendantControls(ofType: NSButton.self) where button.identifier?.rawValue == identifier {
+            return button
+        }
+        return try #require(nil as NSButton?)
+    }
+}
+
+private final class FakePreferencesBackupService: PreferencesBackupServicing {
+    var exportedURL: URL?
+    var exportedSections: Set<BackupPreferenceSection>?
+    var previewedURL: URL?
+    var preview = PreferencesBackupPreview()
+    var restoredURL: URL?
+    var restoredSections: Set<BackupPreferenceSection>?
+
+    func exportBackup(to url: URL, sections: Set<BackupPreferenceSection>) throws {
+        exportedURL = url
+        exportedSections = sections
+    }
+
+    func previewBackup(at url: URL) throws -> PreferencesBackupPreview {
+        previewedURL = url
+        return preview
+    }
+
+    func restoreBackup(from url: URL, sections: Set<BackupPreferenceSection>) throws {
+        restoredURL = url
+        restoredSections = sections
+    }
+}
+
+private final class FakePreferencesBackupDialogs: PreferencesBackupDialogProviding {
+    var exportURL: URL?
+    var restoreURL: URL?
+    var restoreSections: Set<BackupPreferenceSection>?
+    var previewForRestore: PreferencesBackupPreview?
+    var confirmHistory = false
+    var didConfirmHistory = false
+    var successMessages = [String]()
+    var failureMessages = [String]()
+
+    func chooseExportURL(window: NSWindow?) -> URL? {
+        exportURL
+    }
+
+    func chooseRestoreURL(window: NSWindow?) -> URL? {
+        restoreURL
+    }
+
+    func chooseRestoreSections(for preview: PreferencesBackupPreview, window: NSWindow?) -> Set<BackupPreferenceSection>? {
+        previewForRestore = preview
+        return restoreSections
+    }
+
+    func confirmRestoreClipboardHistory(window: NSWindow?) -> Bool {
+        didConfirmHistory = true
+        return confirmHistory
+    }
+
+    func showSuccess(message: String, informativeText: String, window: NSWindow?) {
+        successMessages.append(message)
+    }
+
+    func showFailure(message: String, informativeText: String, window: NSWindow?) {
+        failureMessages.append(message)
     }
 }
 

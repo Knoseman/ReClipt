@@ -9,6 +9,147 @@
 //
 
 import Cocoa
+import UniformTypeIdentifiers
+
+// MARK: - Backup Preferences Contracts
+
+enum BackupPreferenceSection: String, CaseIterable, Hashable {
+    case settings
+    case snippets
+    case history
+
+    var title: String {
+        switch self {
+        case .settings:
+            return String(localized: "Settings")
+        case .snippets:
+            return String(localized: "Snippets")
+        case .history:
+            return String(localized: "Clipboard history")
+        }
+    }
+}
+
+struct PreferencesBackupPreview: Equatable {
+    var appVersion: String?
+    var exportedAt: Date?
+    var includesSettings: Bool
+    var includesSnippets: Bool
+    var snippetCount: Int
+    var includesHistory: Bool
+    var historyCount: Int
+
+    init(
+        appVersion: String? = nil,
+        exportedAt: Date? = nil,
+        includesSettings: Bool = false,
+        includesSnippets: Bool = false,
+        snippetCount: Int = 0,
+        includesHistory: Bool = false,
+        historyCount: Int = 0
+    ) {
+        self.appVersion = appVersion
+        self.exportedAt = exportedAt
+        self.includesSettings = includesSettings
+        self.includesSnippets = includesSnippets
+        self.snippetCount = snippetCount
+        self.includesHistory = includesHistory
+        self.historyCount = historyCount
+    }
+
+    var availableSections: Set<BackupPreferenceSection> {
+        var sections = Set<BackupPreferenceSection>()
+        if includesSettings { sections.insert(.settings) }
+        if includesSnippets { sections.insert(.snippets) }
+        if includesHistory { sections.insert(.history) }
+        return sections
+    }
+}
+
+protocol PreferencesBackupServicing {
+    func exportBackup(to url: URL, sections: Set<BackupPreferenceSection>) throws
+    func previewBackup(at url: URL) throws -> PreferencesBackupPreview
+    func restoreBackup(from url: URL, sections: Set<BackupPreferenceSection>) throws
+}
+
+protocol PreferencesBackupDialogProviding {
+    func chooseExportURL(window: NSWindow?) -> URL?
+    func chooseRestoreURL(window: NSWindow?) -> URL?
+    func chooseRestoreSections(for preview: PreferencesBackupPreview, window: NSWindow?) -> Set<BackupPreferenceSection>?
+    func confirmRestoreClipboardHistory(window: NSWindow?) -> Bool
+    func showSuccess(message: String, informativeText: String, window: NSWindow?)
+    func showFailure(message: String, informativeText: String, window: NSWindow?)
+}
+
+struct BackupServicePreferencesAdapter: PreferencesBackupServicing {
+    let service: BackupService
+
+    init(service: BackupService = BackupService()) {
+        self.service = service
+    }
+
+    func exportBackup(to url: URL, sections: Set<BackupPreferenceSection>) throws {
+        try service.exportBackup(to: url, sections: sections.backupSections)
+    }
+
+    func previewBackup(at url: URL) throws -> PreferencesBackupPreview {
+        let preview = try service.previewBackup(at: url)
+        return PreferencesBackupPreview(
+            appVersion: preview.appVersion,
+            exportedAt: preview.exportedAt,
+            includesSettings: preview.sections.contains(.settings),
+            includesSnippets: preview.sections.contains(.snippets),
+            snippetCount: preview.snippetCount,
+            includesHistory: preview.sections.contains(.history),
+            historyCount: preview.historyItemCount
+        )
+    }
+
+    func restoreBackup(from url: URL, sections: Set<BackupPreferenceSection>) throws {
+        try service.restoreBackup(from: url, sections: sections.backupSections)
+    }
+}
+
+private extension Set where Element == BackupPreferenceSection {
+    var backupSections: Set<BackupSection> {
+        Set<BackupSection>(map { $0.backupSection })
+    }
+}
+
+private extension BackupPreferenceSection {
+    var backupSection: BackupSection {
+        switch self {
+        case .settings: return .settings
+        case .snippets: return .snippets
+        case .history: return .history
+        }
+    }
+}
+
+enum BackupPreferenceControlIdentifier {
+    static let exportSettingsCheckbox = NSUserInterfaceItemIdentifier("Preferences.Backup.export.settings")
+    static let exportSnippetsCheckbox = NSUserInterfaceItemIdentifier("Preferences.Backup.export.snippets")
+    static let exportHistoryCheckbox = NSUserInterfaceItemIdentifier("Preferences.Backup.export.history")
+    static let exportButton = NSUserInterfaceItemIdentifier("Preferences.Backup.export.button")
+    static let restoreButton = NSUserInterfaceItemIdentifier("Preferences.Backup.restore.button")
+}
+
+private enum BackupPreferenceError: LocalizedError {
+    case serviceUnavailable
+    case noExportSections
+    case noRestoreSections
+
+    var errorDescription: String? {
+        switch self {
+        case .serviceUnavailable:
+            return String(localized: "Backup service is not available yet.")
+        case .noExportSections:
+            return String(localized: "Select at least one section to export.")
+        case .noRestoreSections:
+            return String(localized: "Select at least one section to restore.")
+        }
+    }
+}
 
 final class PreferencesWindowController: NSWindowController {
 
@@ -32,19 +173,33 @@ final class PreferencesWindowController: NSWindowController {
     }
 
     private let toolbarHeight: CGFloat = 64
-    private let panes: [Pane] = [
-        Pane(title: String(localized: "General"), systemImageName: "switch.2", viewController: GeneralPreferenceViewController()),
-        Pane(title: String(localized: "Menu"), systemImageName: "list.bullet", viewController: MenuPreferenceViewController()),
-        Pane(title: String(localized: "Type"), systemImageName: "doc.text", viewController: TypePreferenceViewController()),
-        Pane(title: String(localized: "Exclude"), systemImageName: "nosign", viewController: ExcludeAppPreferenceViewController()),
-        Pane(title: String(localized: "Shortcuts"), systemImageName: "keyboard", viewController: ShortcutsPreferenceViewController())
-    ]
+    private let panes: [Pane]
 
     private var toolbarView: NSView?
     private var toolbarButtons = [PreferenceTabButton]()
     private var currentViewController: NSViewController?
     private var selectedIndex = 0
     private var hasConfiguredWindow = false
+
+    init(
+        window: NSWindow?,
+        backupService: PreferencesBackupServicing? = BackupServicePreferencesAdapter(),
+        backupDialogProvider: PreferencesBackupDialogProviding = AppKitPreferencesBackupDialogProvider()
+    ) {
+        self.panes = [
+            Pane(title: String(localized: "General"), systemImageName: "switch.2", viewController: GeneralPreferenceViewController()),
+            Pane(title: String(localized: "Menu"), systemImageName: "list.bullet", viewController: MenuPreferenceViewController()),
+            Pane(title: String(localized: "Type"), systemImageName: "doc.text", viewController: TypePreferenceViewController()),
+            Pane(title: String(localized: "Exclude"), systemImageName: "nosign", viewController: ExcludeAppPreferenceViewController()),
+            Pane(title: String(localized: "Shortcuts"), systemImageName: "keyboard", viewController: ShortcutsPreferenceViewController()),
+            Pane(title: String(localized: "Backup"), systemImageName: "externaldrive", viewController: BackupPreferenceViewController(service: backupService, dialogProvider: backupDialogProvider))
+        ]
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     // MARK: - Window Life Cycle
     override func windowDidLoad() {
@@ -313,6 +468,268 @@ final class MenuPreferenceViewController: NSViewController {
         addNumberRow(String(localized: "Tooltip text length:"), key: Constants.UserDefaults.maxLengthOfToolTip, range: 1...10000, unit: String(localized: "chars"), y: &rightY, to: view, x: 348, fieldX: 486, labelWidth: 130)
 
         self.view = view
+    }
+}
+
+struct AppKitPreferencesBackupDialogProvider: PreferencesBackupDialogProviding {
+    private static let backupContentType = UTType(filenameExtension: "recliptbackup") ?? .json
+
+    func chooseExportURL(window: NSWindow?) -> URL? {
+        let panel = NSSavePanel()
+        panel.title = String(localized: "Export Backup")
+        panel.prompt = String(localized: "Export")
+        panel.nameFieldStringValue = "ReClipt Backup.recliptbackup"
+        panel.allowedContentTypes = [Self.backupContentType]
+        panel.canCreateDirectories = true
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    func chooseRestoreURL(window: NSWindow?) -> URL? {
+        let panel = NSOpenPanel()
+        panel.title = String(localized: "Restore Backup")
+        panel.prompt = String(localized: "Restore")
+        panel.allowedContentTypes = [Self.backupContentType]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.resolvesAliases = true
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    func chooseRestoreSections(for preview: PreferencesBackupPreview, window: NSWindow?) -> Set<BackupPreferenceSection>? {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Restore Backup")
+        alert.informativeText = previewText(for: preview)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: String(localized: "Restore"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+
+        var checkboxes = [BackupPreferenceSection: NSButton]()
+        for section in BackupPreferenceSection.allCases {
+            let checkbox = NSButton(checkboxWithTitle: section.title, target: nil, action: nil)
+            checkbox.state = preview.availableSections.contains(section) ? .on : .off
+            checkbox.isEnabled = preview.availableSections.contains(section)
+            checkboxes[section] = checkbox
+            stack.addArrangedSubview(checkbox)
+        }
+        stack.frame = NSRect(x: 0, y: 0, width: 320, height: 90)
+        alert.accessoryView = stack
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        return Set(checkboxes.compactMap { section, checkbox in
+            checkbox.state == .on && checkbox.isEnabled ? section : nil
+        })
+    }
+
+    func confirmRestoreClipboardHistory(window: NSWindow?) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Restore clipboard history?")
+        alert.informativeText = String(localized: "Clipboard history can contain private content. Only restore it from backup files you trust.")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: String(localized: "Restore History"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    func showSuccess(message: String, informativeText: String, window: NSWindow?) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.informativeText = informativeText
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.runModal()
+    }
+
+    func showFailure(message: String, informativeText: String, window: NSWindow?) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.informativeText = informativeText
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.runModal()
+    }
+
+    private func previewText(for preview: PreferencesBackupPreview) -> String {
+        var lines = [String(localized: "Review the backup contents before restoring.")]
+        if let appVersion = preview.appVersion, !appVersion.isEmpty {
+            lines.append(String(format: String(localized: "App version: %@"), appVersion))
+        }
+        if let exportedAt = preview.exportedAt {
+            lines.append(String(format: String(localized: "Exported: %@"), DateFormatter.localizedString(from: exportedAt, dateStyle: .medium, timeStyle: .short)))
+        }
+        lines.append(preview.includesSettings ? String(localized: "Settings: included") : String(localized: "Settings: not included"))
+        lines.append(preview.includesSnippets ? String(format: String(localized: "Snippets: %d"), preview.snippetCount) : String(localized: "Snippets: not included"))
+        lines.append(preview.includesHistory ? String(format: String(localized: "Clipboard history items: %d"), preview.historyCount) : String(localized: "Clipboard history: not included"))
+        return lines.joined(separator: "\n")
+    }
+}
+
+final class BackupPreferenceViewController: NSViewController {
+    private let service: PreferencesBackupServicing?
+    private let dialogProvider: PreferencesBackupDialogProviding
+    private var sectionControls = [BackupPreferenceSection: NSButton]()
+
+    init(
+        service: PreferencesBackupServicing? = nil,
+        dialogProvider: PreferencesBackupDialogProviding = AppKitPreferencesBackupDialogProvider()
+    ) {
+        self.service = service
+        self.dialogProvider = dialogProvider
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func loadView() {
+        let view = makePreferencePane(height: 380)
+        var y: CGFloat = 24
+
+        addSectionLabel(String(localized: "Export Backup"), y: &y, to: view)
+        addHelpLabel(
+            String(localized: "Create a local backup file. ReClipt does not upload your data."),
+            y: &y,
+            to: view
+        )
+        addSectionCheckbox(.settings, title: String(localized: "Settings"), state: .on, y: &y, to: view)
+        addSectionCheckbox(.snippets, title: String(localized: "Snippets"), state: .on, y: &y, to: view)
+        addSectionCheckbox(.history, title: String(localized: "Clipboard history"), state: .off, y: &y, to: view)
+        addHelpLabel(
+            String(localized: "Clipboard history can contain private content. Include it only when needed."),
+            y: &y,
+            to: view
+        )
+        let exportButton = addActionButton(String(localized: "Export Backup…"), identifier: BackupPreferenceControlIdentifier.exportButton, action: #selector(exportBackup(_:)), y: &y, to: view)
+        exportButton.keyEquivalent = ""
+
+        y += 24
+        addSectionLabel(String(localized: "Restore Backup"), y: &y, to: view)
+        addHelpLabel(
+            String(localized: "Choose a .recliptbackup file, review its contents, then select what to restore."),
+            y: &y,
+            to: view
+        )
+        addActionButton(String(localized: "Restore Backup…"), identifier: BackupPreferenceControlIdentifier.restoreButton, action: #selector(restoreBackup(_:)), y: &y, to: view)
+
+        self.view = view
+    }
+
+    @objc private func exportBackup(_ sender: NSButton) {
+        do {
+            guard let service else { throw BackupPreferenceError.serviceUnavailable }
+            let sections = selectedExportSections()
+            guard !sections.isEmpty else { throw BackupPreferenceError.noExportSections }
+            guard let url = dialogProvider.chooseExportURL(window: view.window) else { return }
+            try service.exportBackup(to: url, sections: sections)
+            dialogProvider.showSuccess(
+                message: String(localized: "Backup exported"),
+                informativeText: String(localized: "Your ReClipt backup was saved."),
+                window: view.window
+            )
+        } catch {
+            showFailure(error)
+        }
+    }
+
+    @objc private func restoreBackup(_ sender: NSButton) {
+        do {
+            guard let service else { throw BackupPreferenceError.serviceUnavailable }
+            guard let url = dialogProvider.chooseRestoreURL(window: view.window) else { return }
+            let preview = try service.previewBackup(at: url)
+            guard var sections = dialogProvider.chooseRestoreSections(for: preview, window: view.window) else { return }
+            sections.formIntersection(preview.availableSections)
+            guard !sections.isEmpty else { throw BackupPreferenceError.noRestoreSections }
+            if sections.contains(.history), !dialogProvider.confirmRestoreClipboardHistory(window: view.window) {
+                return
+            }
+            try service.restoreBackup(from: url, sections: sections)
+            postRestoreNotifications(for: sections)
+            dialogProvider.showSuccess(
+                message: String(localized: "Backup restored"),
+                informativeText: String(localized: "Your selected ReClipt data was restored."),
+                window: view.window
+            )
+        } catch {
+            showFailure(error)
+        }
+    }
+
+    private func addSectionCheckbox(
+        _ section: BackupPreferenceSection,
+        title: String,
+        state: NSControl.StateValue,
+        y: inout CGFloat,
+        to view: NSView
+    ) {
+        let checkbox = NSButton(checkboxWithTitle: title, target: nil, action: nil)
+        switch section {
+        case .settings:
+            checkbox.identifier = BackupPreferenceControlIdentifier.exportSettingsCheckbox
+        case .snippets:
+            checkbox.identifier = BackupPreferenceControlIdentifier.exportSnippetsCheckbox
+        case .history:
+            checkbox.identifier = BackupPreferenceControlIdentifier.exportHistoryCheckbox
+        }
+        checkbox.state = state
+        checkbox.frame = NSRect(x: labelX, y: y, width: 360, height: 22)
+        view.addSubview(checkbox)
+        sectionControls[section] = checkbox
+        y += 26
+    }
+
+    @discardableResult
+    private func addActionButton(
+        _ title: String,
+        identifier: NSUserInterfaceItemIdentifier,
+        action: Selector,
+        y: inout CGFloat,
+        to view: NSView
+    ) -> NSButton {
+        let button = NSButton(title: title, target: self, action: action)
+        button.identifier = identifier
+        button.bezelStyle = .rounded
+        button.frame = NSRect(x: labelX, y: y + 4, width: 160, height: 30)
+        view.addSubview(button)
+        y += 40
+        return button
+    }
+
+    private func addHelpLabel(_ title: String, y: inout CGFloat, to view: NSView) {
+        let label = NSTextField(wrappingLabelWithString: title)
+        label.textColor = .secondaryLabelColor
+        label.frame = NSRect(x: labelX, y: y, width: 470, height: 34)
+        view.addSubview(label)
+        y += 42
+    }
+
+    private func selectedExportSections() -> Set<BackupPreferenceSection> {
+        Set(sectionControls.compactMap { section, checkbox in
+            checkbox.state == .on ? section : nil
+        })
+    }
+
+    private func postRestoreNotifications(for sections: Set<BackupPreferenceSection>) {
+        if sections.contains(.settings) {
+            NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: AppEnvironment.current.defaults)
+        }
+        if sections.contains(.snippets) {
+            NotificationCenter.default.post(name: SnippetRepository.snippetsDidChangeNotification, object: nil)
+        }
+        if sections.contains(.history) {
+            NotificationCenter.default.post(name: PasteboardHistoryRepository.historyDidChangeNotification, object: nil)
+        }
+    }
+
+    private func showFailure(_ error: Error) {
+        let message = String(localized: "Backup failed")
+        let informativeText = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        dialogProvider.showFailure(message: message, informativeText: informativeText, window: view.window)
     }
 }
 

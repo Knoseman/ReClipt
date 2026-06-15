@@ -388,6 +388,109 @@ struct PasteboardHistoryRepositoryTests {
             #expect(historyItems.allSatisfy { $0.image != nil })
         }
     }
+
+    @Test
+    func fetchBackupHistoryItemsIncludesAssetsAndThumbnailInStableOrder() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = PasteboardHistoryRepository()
+            let newer = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("#336699".utf8))])
+            )
+            let older = try #require(
+                PasteboardContent(assets: [
+                    PasteboardContent.Asset(type: .string, data: Data("First".utf8)),
+                    fileURLAsset("/tmp/report.pdf")
+                ])
+            )
+
+            repository.save(id: "newer", content: newer, updateAt: 2000)
+            repository.save(id: "older", content: older, updateAt: 1000)
+
+            let items = repository.fetchBackupHistoryItems()
+
+            #expect(items.map(\.id) == ["older", "newer"])
+            #expect(items[0].assets.map(\.index) == [0, 1])
+            #expect(items[0].assets.map(\.pasteboardType) == [NSPasteboard.PasteboardType.string.rawValue, NSPasteboard.PasteboardType.fileURL.rawValue])
+            #expect(items[0].assets[0].data == Data("First".utf8))
+            #expect(items[1].thumbnail?.kind == PasteboardHistoryThumbnailAsset.Kind.colorCode.rawValue)
+            #expect(items[1].thumbnail?.data.isEmpty == false)
+        }
+    }
+
+    @Test
+    func restoreBackupHistoryItemsRecreatesContentAndPostsNotification() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = PasteboardHistoryRepository()
+            var didNotify = false
+            let token = NotificationCenter.default.addObserver(
+                forName: PasteboardHistoryRepository.historyDidChangeNotification,
+                object: nil,
+                queue: nil
+            ) { _ in
+                didNotify = true
+            }
+            defer { NotificationCenter.default.removeObserver(token) }
+
+            try repository.restoreBackupHistoryItems([
+                BackupHistoryItem(
+                    id: "restored",
+                    title: "Restored title",
+                    pasteboardTypes: [NSPasteboard.PasteboardType.string.rawValue],
+                    updateAt: 1234,
+                    deviceID: "device-a",
+                    assets: [
+                        BackupHistoryAsset(index: 0, pasteboardType: NSPasteboard.PasteboardType.string.rawValue, data: Data("Restored body".utf8))
+                    ],
+                    thumbnail: BackupHistoryThumbnail(kind: PasteboardHistoryThumbnailAsset.Kind.colorCode.rawValue, data: Data([1, 2, 3]))
+                )
+            ])
+
+            let history = try #require(repository.fetchHistory(id: "restored"))
+            let content = try #require(repository.fetchContent(id: "restored"))
+            let detail = try #require(repository.fetchHistoryDetails(ascending: true, includesThumbnailAsset: true, limit: 1, offset: 0).first)
+            #expect(history.title == "Restored title")
+            #expect(history.pasteboardTypes == [.string])
+            #expect(history.updateAt == 1234)
+            #expect(history.deviceID == "device-a")
+            #expect(content.assets == [PasteboardContent.Asset(type: .string, data: Data("Restored body".utf8))])
+            #expect(detail.thumbnailAsset?.data == Data([1, 2, 3]))
+            #expect(didNotify)
+        }
+    }
+
+    @Test
+    func restoreBackupHistoryItemsUpdatesExistingHistoryWithoutDuplicating() throws {
+        try TestSQLiteStore.withCleanStore {
+            let repository = PasteboardHistoryRepository()
+            let original = try #require(
+                PasteboardContent(assets: [PasteboardContent.Asset(type: .string, data: Data("Original".utf8))])
+            )
+            repository.save(id: "same-id", content: original, updateAt: 1000)
+
+            try repository.restoreBackupHistoryItems([
+                BackupHistoryItem(
+                    id: "same-id",
+                    title: "Updated",
+                    pasteboardTypes: [NSPasteboard.PasteboardType.string.rawValue],
+                    updateAt: 3000,
+                    deviceID: nil,
+                    assets: [
+                        BackupHistoryAsset(index: 0, pasteboardType: NSPasteboard.PasteboardType.string.rawValue, data: Data("Updated".utf8))
+                    ],
+                    thumbnail: nil
+                )
+            ])
+
+            let history = try #require(repository.fetchHistory(id: "same-id"))
+            let content = try #require(repository.fetchContent(id: "same-id"))
+            #expect(repository.count() == 1)
+            #expect(history.title == "Updated")
+            #expect(history.updateAt == 3000)
+            #expect(content.stringValue == "Updated")
+            #expect(repository.searchHistoryDetails(query: "Original", ascending: true, includesThumbnailAsset: false, limit: 10, offset: 0).isEmpty)
+            #expect(repository.searchHistoryDetails(query: "Updated", ascending: true, includesThumbnailAsset: false, limit: 10, offset: 0).map(\.history.id) == ["same-id"])
+        }
+    }
 }
 
 private extension PasteboardHistoryRepositoryTests {

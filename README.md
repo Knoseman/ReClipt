@@ -6,6 +6,12 @@ SQLite storage, programmatic AppKit views, and a simplified dependency surface.
 For installing a downloaded self-signed release, see
 [Installing the Self-Signed ReClipt Release](docs/INSTALL_SELF_SIGNED.md).
 
+## Local Backup and Restore
+
+Use `Preferences > Backup` to export or restore a local `.recliptbackup` file.
+Exporting clipboard history is optional because it can contain private content.
+Restore previews the backup contents before applying selected sections.
+
 ## Requirements
 
 - macOS 26 or later
@@ -94,6 +100,7 @@ Check these app-level behaviors manually:
 - Selecting a history item pastes or copies it according to Accessibility permission state.
 - Snippets can be created, edited, imported, exported, and pasted.
 - Preferences tabs stay aligned and settings take effect after changing them.
+- Backup export and restore use local `.recliptbackup` files and show success or failure alerts.
 
 ### Ad-hoc Release
 

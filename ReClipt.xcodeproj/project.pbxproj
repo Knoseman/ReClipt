@@ -26,6 +26,13 @@
 		C5AA11012FD1000000ABC001 /* SnippetTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */; };
 		C5AA11032FD1000000ABC001 /* SnippetTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */; };
 		C5B100022FD2000000ABC001 /* PreferencesWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */; };
+		C5D000022FD6000000ABC001 /* BackupModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D000012FD6000000ABC001 /* BackupModels.swift */; };
+		C5D000042FD6000000ABC001 /* BackupJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D000032FD6000000ABC001 /* BackupJSON.swift */; };
+		C5D000062FD6000000ABC001 /* BackupSettingsExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D000052FD6000000ABC001 /* BackupSettingsExporter.swift */; };
+		C5D000082FD6000000ABC001 /* BackupSettingsRestoreHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D000072FD6000000ABC001 /* BackupSettingsRestoreHelper.swift */; };
+		C5D0000A2FD6000000ABC001 /* BackupExportAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D000092FD6000000ABC001 /* BackupExportAdapters.swift */; };
+		C5D0000C2FD6000000ABC001 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D0000B2FD6000000ABC001 /* BackupService.swift */; };
+		C5D0000E2FD6000000ABC001 /* BackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D0000D2FD6000000ABC001 /* BackupServiceTests.swift */; };
 		C5C200022FD3000000ABC001 /* SnippetsEditorWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C200012FD3000000ABC001 /* SnippetsEditorWindowControllerTests.swift */; };
 		C57F10012FD0A80000A1B2C3 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57F10002FD0A80000A1B2C3 /* main.swift */; };
 		855459DB7600875E683D0186 /* SQLiteStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85499D3DEAA88981F37B087B /* SQLiteStoreTests.swift */; };
@@ -109,6 +116,13 @@
 		C5AA11002FD1000000ABC001 /* SnippetTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransfer.swift; sourceTree = "<group>"; };
 		C5AA11022FD1000000ABC001 /* SnippetTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetTransferTests.swift; sourceTree = "<group>"; };
 		C5B100012FD2000000ABC001 /* PreferencesWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesWindowControllerTests.swift; sourceTree = "<group>"; };
+		C5D000012FD6000000ABC001 /* BackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModels.swift; sourceTree = "<group>"; };
+		C5D000032FD6000000ABC001 /* BackupJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupJSON.swift; sourceTree = "<group>"; };
+		C5D000052FD6000000ABC001 /* BackupSettingsExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupSettingsExporter.swift; sourceTree = "<group>"; };
+		C5D000072FD6000000ABC001 /* BackupSettingsRestoreHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupSettingsRestoreHelper.swift; sourceTree = "<group>"; };
+		C5D000092FD6000000ABC001 /* BackupExportAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupExportAdapters.swift; sourceTree = "<group>"; };
+		C5D0000B2FD6000000ABC001 /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupService.swift; sourceTree = "<group>"; };
+		C5D0000D2FD6000000ABC001 /* BackupServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupServiceTests.swift; sourceTree = "<group>"; };
 		C5C200012FD3000000ABC001 /* SnippetsEditorWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetsEditorWindowControllerTests.swift; sourceTree = "<group>"; };
 		C57F10002FD0A80000A1B2C3 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		85499D3DEAA88981F37B087B /* SQLiteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteStoreTests.swift; sourceTree = "<group>"; };
@@ -208,6 +222,27 @@
 				C5208B882FC6E7FF00BC4568 /* ReClipt.xcconfig */,
 			);
 			path = Configurations;
+			sourceTree = "<group>";
+		};
+		C5D0000F2FD6000000ABC001 /* Backup */ = {
+			isa = PBXGroup;
+			children = (
+				C5D000012FD6000000ABC001 /* BackupModels.swift */,
+				C5D000032FD6000000ABC001 /* BackupJSON.swift */,
+				C5D000052FD6000000ABC001 /* BackupSettingsExporter.swift */,
+				C5D000072FD6000000ABC001 /* BackupSettingsRestoreHelper.swift */,
+				C5D000092FD6000000ABC001 /* BackupExportAdapters.swift */,
+				C5D0000B2FD6000000ABC001 /* BackupService.swift */,
+			);
+			path = Backup;
+			sourceTree = "<group>";
+		};
+		C5D000102FD6000000ABC001 /* Backup */ = {
+			isa = PBXGroup;
+			children = (
+				C5D0000D2FD6000000ABC001 /* BackupServiceTests.swift */,
+			);
+			path = Backup;
 			sourceTree = "<group>";
 		};
 		C54C29D32FC3E1F500EF30FB /* Database */ = {
@@ -328,6 +363,7 @@
 		FA1DB49C1DDCB3FB007F95C8 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				C5D0000F2FD6000000ABC001 /* Backup */,
 				C54C29D32FC3E1F500EF30FB /* Database */,
 				C5700B452FC40BBF00C8F965 /* Repositories */,
 				FA3778911F3B690D003B5BAB /* Environments */,
@@ -523,6 +559,7 @@
 		FAC43DDB1B35D8B100C06102 /* ReCliptTests */ = {
 			isa = PBXGroup;
 			children = (
+				C5D000102FD6000000ABC001 /* Backup */,
 				C5700B472FC5C0DB00C8F965 /* Database */,
 				C58A00002FD5000000ABC001 /* Environments */,
 				C571000D2FCEB44000C8F965 /* Extensions */,
@@ -692,6 +729,12 @@
 				FAE911B91DE045E2008A4BEC /* HotKeyService.swift in Sources */,
 				FA1DB5201DDCB4C0007F95C8 /* SnippetsEditorWindowController.swift in Sources */,
 				C5AA11012FD1000000ABC001 /* SnippetTransfer.swift in Sources */,
+				C5D000022FD6000000ABC001 /* BackupModels.swift in Sources */,
+				C5D000042FD6000000ABC001 /* BackupJSON.swift in Sources */,
+				C5D000062FD6000000ABC001 /* BackupSettingsExporter.swift in Sources */,
+				C5D000082FD6000000ABC001 /* BackupSettingsRestoreHelper.swift in Sources */,
+				C5D0000A2FD6000000ABC001 /* BackupExportAdapters.swift in Sources */,
+				C5D0000C2FD6000000ABC001 /* BackupService.swift in Sources */,
 				FA1DB4EB1DDCB49C007F95C8 /* PlaceholderTextView.swift in Sources */,
 				FA1DB5121DDCB4C0007F95C8 /* PreferencesWindowController.swift in Sources */,
 				FAE911BB1DE054F1008A4BEC /* NSCoding+Archive.swift in Sources */,
@@ -719,6 +762,7 @@
 				C57100012FCAE00000C8F965 /* SnippetRepositoryTests.swift in Sources */,
 				C5C200022FD3000000ABC001 /* SnippetsEditorWindowControllerTests.swift in Sources */,
 				C5AA11032FD1000000ABC001 /* SnippetTransferTests.swift in Sources */,
+				C5D0000E2FD6000000ABC001 /* BackupServiceTests.swift in Sources */,
 				855459DB7600875E683D0186 /* SQLiteStoreTests.swift in Sources */,
 			);
 		};
